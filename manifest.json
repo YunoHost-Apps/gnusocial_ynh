@@ -68,15 +68,6 @@
                 "choices": ["Public", "Community", "Private"],
                 "default": "Public"
             },
-            {
-                "name": "public_site",
-                "ask": {
-                    "en": "Is it a public GNU Social site?",
-                    "fr": "¿Es un sito público?"
-                },
-                "choices": ["Yes", "No"],
-                "default": "Yes"
-            }
         ]
     }
 }

@@ -11,7 +11,6 @@ domain=$2
 path=$3
 admin=$4
 profile=$5
-is_public=$6
 
 # Check if admin exists
 #sudo yunohost user list --json | grep -q "\"username\": \"$admin_gs\""
@@ -110,17 +109,6 @@ do
 	let result=$?
 	let loop_number++
 done
-
-if [ "$is_public" = "No" ];
-then
-	sudo yunohost app setting $app skipped_uris -d
-	sudo yunohost app ssowatconf
-	mysql -u $dbuser -p$dbpwd $dbuser < ../conf/private.sql
-else
-	mysql -u $dbuser -p$dbpwd $dbuser < ../conf/public.sql
-	sudo cp ../conf/nginx.conf-public /etc/nginx/conf.d/$domain.d/gnusocial.conf
-	sudo service nginx reload
-fi
 
 # Start GNU Social queue daemon
 sudo bash $final_path/scripts/startdaemons.sh || echo "Queue daemon not started"
