@@ -19,6 +19,14 @@
     "arguments": {
         "install" : [
             {
+                "name": "name",
+                "ask": {
+                    "en": "Choose a name for the GNU ",
+                    "es": "Escoge un nombre para el nodo GNU Social",
+                },
+                "example": "node"
+            },
+            {
                 "name": "domain",
                 "type": "domain",
                 "ask": {

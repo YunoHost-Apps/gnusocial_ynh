@@ -1,11 +1,12 @@
 #!/bin/bash
 
 # Retrieve arguments
-domain=$1
-path=$2
-admin_gs=$3
-profile=$4
-is_public=$5
+nodename=$1
+domain=$2
+path=$3
+admin_gs=$4
+profile=$5
+is_public=$6
 
 # Check if admin exists
 sudo yunohost user list --json | grep -q "\"username\": \"$admin_gs\""
@@ -48,7 +49,7 @@ sudo sed -i "s/gs_domain/$domain/g" $final_path/config.php
 sudo sed -i "s/yunouser/$db_user/g" $final_path/config.php
 sudo sed -i "s/yunopass/$db_pwd/g" $final_path/config.php
 sudo sed -i "s/yunobase/$db_user/g" $final_path/config.php
-sudo sed -i "s/gs_prfile/$profile/g" $final_path/config.php
+sudo sed -i "s/gs_profile/$profile/g" $final_path/config.php
 
 #TODO: LDAP options
 #sudo sed -i "s@URLWORDPRESS@$domain$path@g" ../conf/*.sql
@@ -68,7 +69,7 @@ sudo yunohost app setting gnusocial skipped_uris -v "/"
 sudo yunohost app ssowatconf
 
 # Gnu Social installation
-curl -kL -H "Host: $domain" -X POST --data "sitename=$domain&fancy=enable&ssl=alwaysr&host=locahost&dbtype=mysql&database=$db_user&dbusername=$db_user&dbpassword=$db_pwd
+curl -kL -H "Host: $domain" -X POST --data "sitename=$nodename&fancy=enable&ssl=alwaysr&host=locahost&dbtype=mysql&database=$db_user&dbusername=$db_user&dbpassword=$db_pwd
 &admin_nickname=$admin_gs&admin_password=$db_pwd&admin_password2=$db_pwd&admin_email=$admin_mail&site_profile=$gs_profile&submit=Submit" http://127.0.0.1$path/install.php > /dev/null 2>&1
 sleep 5
 mysql -u $db_user -p$db_pwd $db_user -e "select * from options;" > /dev/null 2>&1
