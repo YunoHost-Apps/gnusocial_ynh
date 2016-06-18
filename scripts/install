@@ -51,7 +51,6 @@ sudo sed -i "s/yunouser/$dbuser/g" $final_path/config.php
 sudo sed -i "s/yunopass/$dbpwd/g" $final_path/config.php
 sudo sed -i "s/yunobase/$dbuser/g" $final_path/config.php
 sudo sed -i "s/gs_profile/$profile/g" $final_path/config.php
-sudo echo "addPlugin('Qvitter');" >> $final_path/config.php
 }
 
 # Set permissions to gnusocial directory
