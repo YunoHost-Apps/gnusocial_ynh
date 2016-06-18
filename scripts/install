@@ -45,7 +45,7 @@ sudo cp -a ../sources/. $final_path
 
 function change_config {
 # Change variables in GNU Social configuration
-sudo sed -i "s/gs_name/$name/g" $final_path/config.php
+sudo sed -i "s/gs_name/$nodename/g" $final_path/config.php
 sudo sed -i "s/gs_domain/$domain/g" $final_path/config.php
 sudo sed -i "s/yunouser/$dbuser/g" $final_path/config.php
 sudo sed -i "s/yunopass/$dbpwd/g" $final_path/config.php
@@ -67,8 +67,8 @@ sudo service nginx reload
 sudo yunohost app setting $app skipped_uris -v "/"
 sudo yunohost app ssowatconf
 
-# Gnu Social installation
-curl -kL -H "Host: $domain/gs/" -X POST --data "sitename=$nodename&fancy=enable&ssl=alwaysr&host=locahost&dbtype=mysql&database=$dbuser&dbusername=$dbuser&dbpassword=$dbpwd&admin_nickname=$admin&admin_password=$dbpwd&admin_password2=$dbpwd&admin_email=$admin_mail&site_profile=$profile&submit=Submit" http://127.0.0.1$path/install.php > /dev/null 2>&1 && sleep 5 && change_config
+  # Gnu Social installation
+  curl -kL -H "Host: $domain/gs/" -X POST --data "sitename=$nodename&fancy=enable&ssl=alwaysr&host=locahost&dbtype=mysql&database=$dbuser&dbusername=$dbuser&dbpassword=$dbpwd&admin_nickname=$admin&admin_password=$dbpwd&admin_password2=$dbpwd&admin_email=$admin_mail&site_profile=$profile&submit=Submit" http://127.0.0.1$path/install.php > /dev/null 2>&1 && sleep 5 && change_config
 
 
 # Start GNU Social queue daemon
