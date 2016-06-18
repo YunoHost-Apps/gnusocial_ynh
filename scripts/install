@@ -46,7 +46,7 @@ sudo cp -a ../sources/. $final_path
 function change_config {
 # Change variables in GNU Social configuration
 sudo sed -i "s/gs_name/$name/g" $final_path/config.php
-sudo sed -i "s/gs_domain/$domain/g" $final_path/config.php
+sudo sed -i "s/gs_domain/$domain\/$path/g" $final_path/config.php
 sudo sed -i "s/yunouser/$dbuser/g" $final_path/config.php
 sudo sed -i "s/yunopass/$dbpwd/g" $final_path/config.php
 sudo sed -i "s/yunobase/$dbuser/g" $final_path/config.php
