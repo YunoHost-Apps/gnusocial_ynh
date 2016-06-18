@@ -1,21 +1,26 @@
 {
+    "package_format": 1,
     "name": "GNU Social",
     "id": "gnusocial",
     "description": {
         "en": "Create a federated comunication node",
         "fr": "Crea un nodo de comunicación federado"
     },
-    "url": "https://www.gnu.io/",
+        "url": "https://www.gnu.io/",
     "maintainer": {
         "name": "Gustavo Moreno",
         "email": "gustavo@laenredadera.net"
     },
     "multi_instance": "true",
+    "license": "free",
     "services": [
         "nginx",
         "php5-fpm",
         "mysql"
     ],
+    "requirements": {
+        "yunohost": ">= 2.3.16"
+    },
     "arguments": {
         "install" : [
             {
