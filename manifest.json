@@ -26,7 +26,7 @@
             {
                 "name": "name",
                 "ask": {
-                    "en": "Choose a name for the GNU ",
+                    "en": "Choose a name for the GNU Social node",
                     "fr": "Escoge un nombre para el nodo GNU Social"
                 },
                 "example": "node"

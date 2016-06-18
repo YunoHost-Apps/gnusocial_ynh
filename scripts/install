@@ -36,7 +36,7 @@ ynh_app_setting_set $app admin_user $admin
 #sudo yunohost app setting gnusocial is_public -v $is_public
 
 # Get admin email
-admin_mail=$(sudo yunohost user info $admin_gs --json | python -c "import json,sys; print json.load(sys.stdin)['mail']")
+admin_mail=$(sudo yunohost user info $admin --json | python -c "import json,sys; print json.load(sys.stdin)['mail']")
 
 
 # Check domain/path availability
@@ -68,7 +68,7 @@ ynh_mysql_create_db $dbname $dbuser $dbpwd
 # Copy files to the right place
 final_path=/var/www/$app
 sudo mkdir -p $final_path
-sudo cp -a ../sources/* $final_path
+sudo cp -a ../sources/. $final_path
 sudo cp ../conf/config.php $final_path/config.php
 
 # Change variables in GNU Social configuration
