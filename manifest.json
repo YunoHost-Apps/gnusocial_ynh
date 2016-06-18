@@ -3,7 +3,7 @@
     "id": "gnusocial",
     "description": {
         "en": "Create a federated comunication node",
-        "es": "Crea un nodo de comunicación federado"
+        "fr": "Crea un nodo de comunicación federado"
     },
     "url": "https://www.gnu.io/",
     "maintainer": {
@@ -22,7 +22,7 @@
                 "name": "name",
                 "ask": {
                     "en": "Choose a name for the GNU ",
-                    "es": "Escoge un nombre para el nodo GNU Social",
+                    "fr": "Escoge un nombre para el nodo GNU Social",
                 },
                 "example": "node"
             },
@@ -31,7 +31,7 @@
                 "type": "domain",
                 "ask": {
                     "en": "Choose a domain for GNU Social",
-                    "es": "Escoge un dominio para GNU Social"
+                    "fr": "Escoge un dominio para GNU Social"
                 },
                 "example": "domain.org"
             },
@@ -40,7 +40,7 @@
                 "type": "path",
                 "ask": {
                     "en": "Choose a path for GNU Social",
-                    "es": "Escoge una ruta para GNU Social"
+                    "fr": "Escoge una ruta para GNU Social"
                 },
                 "example": "/gs",
                 "default": "/gs"
@@ -50,7 +50,7 @@
                 "type": "user",
                 "ask": {
                     "en": "Choose the GNU Social administrator (must be an existing YunoHost user)",
-                    "es": "Escoge un adminitrador para GNU Social (debe ser un usuario existente en Yunuhost)"
+                    "fr": "Escoge un adminitrador para GNU Social (debe ser un usuario existente en Yunuhost)"
                 },
                 "example": "homer"
             },
@@ -58,7 +58,7 @@
                 "name": "profile",
                 "ask": {
                     "en": "What GNU Social profile?",
-                    "es": "¿Qué perfil de GNU Social?"
+                    "fr": "¿Qué perfil de GNU Social?"
                 },
                 "choices": ["Public", "Comminty", "Private"],
                 "default": "Public"
@@ -67,7 +67,7 @@
                 "name": "public_site",
                 "ask": {
                     "en": "Is it a public GNU Social site?",
-                    "es": "¿Es un sito público?"
+                    "fr": "¿Es un sito público?"
                 },
                 "choices": ["Yes", "No"],
                 "default": "Yes"
