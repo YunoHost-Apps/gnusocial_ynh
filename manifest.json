@@ -6,7 +6,7 @@
         "en": "Create a federated comunication node",
         "fr": "Crea un nodo de comunicación federado"
     },
-        "url": "https://www.gnu.io/",
+    "url": "https://www.gnu.io/",
     "maintainer": {
         "name": "Gustavo Moreno",
         "email": "gustavo@laenredadera.net"
