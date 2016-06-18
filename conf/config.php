@@ -23,6 +23,3 @@ $config['db']['schemacheck'] = 'script';
 $config['site']['profile'] = 'gs_profile';
 
 addPlugin('Qvitter');
-
-
-  ~
