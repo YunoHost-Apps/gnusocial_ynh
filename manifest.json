@@ -11,7 +11,7 @@
         "name": "Gustavo Moreno",
         "email": "gustavo@laenredadera.net"
     },
-    "multi_instance": "true",
+    "multi_instance": true,
     "license": "free",
     "services": [
         "nginx",
