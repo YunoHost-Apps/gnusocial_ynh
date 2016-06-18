@@ -67,7 +67,7 @@ sudo yunohost app setting $app skipped_uris -v "/"
 sudo yunohost app ssowatconf
 
   # Gnu Social installation
-sudo php $final_path/scripts/install_cli-php --sitename=$nodename --server=$domain --path=gs --dbtype=mysql --host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin --admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$gs_profile --fancy=true --ssl=always  && change_config
+sudo php $final_path/scripts/install_cli-php --sitename=$nodename --server=$domain --path=$path --dbtype=mysql --host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin --admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile --fancy=true --ssl=always  && change_config
 
 # Start GNU Social queue daemon
 sudo bash $final_path/scripts/startdaemons.sh || echo "Queue daemon not started"
