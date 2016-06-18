@@ -41,7 +41,7 @@ ynh_mysql_create_db $dbname $dbuser $dbpwd
 final_path=/var/www/$app
 sudo mkdir -p $final_path
 sudo cp -a ../sources/. $final_path
-#sudo cp ../conf/config.php $final_path/config.php
+sudo cp ../conf/config.php $final_path/config.php
 
 function change_config {
 # Change variables in GNU Social configuration
