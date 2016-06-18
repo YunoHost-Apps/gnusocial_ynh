@@ -1,0 +1,55 @@
+### GNU social "fancy URL" setup
+#
+#   Change the "RewriteBase" in the new .htaccess file to be the URL path
+#       to your GNU Social installation on your server. Typically this will
+#       be the path to your GNU Social directory relative to your Web root.
+#       If you are installing it in the root directory, leave it as '/'.
+#
+#   If it doesn't work, double-check that AllowOverride for the GNU Social
+#       directory is 'All' in your Apache configuration file. This can be
+#       * /etc/apache2/apache2.conf (generic)
+#       * /etc/apache2/sites-available/default(on Debian and Ubuntu)
+#       * ...many other variations depending on distribution...
+#
+#   See the Apache documentation for .htaccess files for more details:
+#       https://httpd.apache.org/docs/2.4/howto/htaccess.html
+#
+#   Also, check that mod_rewrite is installed and enabled:
+#       https://httpd.apache.org/docs/2.4/mod/mod_rewrite.html
+
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # NOTE: change this to your actual GNU social base URL path,
+  # minus the domain part:
+  #
+  #   https://social.example.com/        => /
+  #   https://example.com/social/ => /social/
+  #
+  RewriteBase /
+  #RewriteBase /mublog/
+
+  ## Uncomment these if having trouble with API authentication
+  ## when PHP is running in CGI or FastCGI mode.
+  #
+  #RewriteCond %{HTTP:Authorization} ^(.*)
+  #RewriteRule ^(.*) - [E=HTTP_AUTHORIZATION:%1]
+
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule (.*) index.php?p=$1 [L,QSA]
+
+  ## You can also use PATHINFO by using this RewriteRule instead:
+  # RewriteRule (.*) index.php/$1 [L,QSA]
+</IfModule>
+
+<FilesMatch "\.(ini)">
+    <IfVersion < 2.3>
+        Order allow,deny
+        Deny from all
+    </IfVersion>
+    <IfVersion >= 2.3>
+        Require all denied
+    </IfVersion>
+</FilesMatch>

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+db_user=gnusocial
+db_name=gnusocial
+root_pwd=$(sudo cat /etc/yunohost/mysql)
+domain=$(sudo yunohost app setting gnusocial domain)
+
+mysql -u root -p$root_pwd -e "DROP DATABASE $db_name ; DROP USER $db_user@localhost ;"
+sudo rm -rf /var/www/gnusocial
+sudo rm -f /etc/nginx/conf.d/$domain.d/gnusocial.conf

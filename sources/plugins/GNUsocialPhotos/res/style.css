@@ -1,0 +1,14 @@
+.photocontainer, .albumcontainer { 
+    display: block; 
+    background-color: yellow; 
+    float: left; 
+    padding: 20px; 
+    margin: 15px; 
+}
+
+.photodescription {
+    display: block;
+    background-color: #dddddd;
+    padding: 20px;
+    margin: 15px;
+}

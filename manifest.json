@@ -1,0 +1,69 @@
+{
+    "name": "GNU Social",
+    "id": "gnusocial",
+    "description": {
+        "en": "Create a federated comunication node",
+        "es": "Crea un nodo de comunicación federado"
+    },
+    "url": "https://www.gnu.io/",
+    "maintainer": {
+        "name": "Gustavo Moreno",
+        "email": "gustavo@laenredadera.net"
+    },
+    "multi_instance": "true",
+    "services": [
+        "nginx",
+        "php5-fpm",
+        "mysql"
+    ],
+    "arguments": {
+        "install" : [
+            {
+                "name": "domain",
+                "type": "domain",
+                "ask": {
+                    "en": "Choose a domain for GNU Social",
+                    "es": "Escoge un dominio para GNU Social"
+                },
+                "example": "domain.org"
+            },
+            {
+                "name": "path",
+                "type": "path",
+                "ask": {
+                    "en": "Choose a path for GNU Social",
+                    "es": "Escoge una ruta para GNU Social"
+                },
+                "example": "/gs",
+                "default": "/gs"
+            },
+            {
+                "name": "admin",
+                "type": "user",
+                "ask": {
+                    "en": "Choose the GNU Social administrator (must be an existing YunoHost user)",
+                    "es": "Escoge un adminitrador para GNU Social (debe ser un usuario existente en Yunuhost)"
+                },
+                "example": "homer"
+            },
+            {
+                "name": "profile",
+                "ask": {
+                    "en": "What GNU Social profile?",
+                    "es": "¿Qué perfil de GNU Social?"
+                },
+                "choices": ["Public", "Comminty", "Private"],
+                "default": "Public"
+            }
+            {
+                "name": "public_site",
+                "ask": {
+                    "en": "Is it a public GNU Social site?",
+                    "es": "¿Es un sito público?"
+                },
+                "choices": ["Yes", "No"],
+                "default": "Yes"
+            }
+        ]
+    }
+}
