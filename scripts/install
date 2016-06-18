@@ -98,7 +98,7 @@ sudo service nginx reload
 
 # Gnu Social installation
 curl -kL -H "Host: $domain" -X POST --data "sitename=$nodename&fancy=enable&ssl=alwaysr&host=locahost&dbtype=mysql&database=$dbuser&dbusername=$dbuser&dbpassword=$dbpwd
-&admin_nickname=$admin&admin_password=$dbpwd&admin_password2=$dbpwd&admin_email=$admin_mail&site_profile=$gs_profile&submit=Submit" http://127.0.0.1$path/install.php > /dev/null 2>&1
+&admin_nickname=$admin&admin_password=$dbpwd&admin_password2=$dbpwd&admin_email=$admin_mail&site_profile=$profile&submit=Submit" http://127.0.0.1$path/install.php > /dev/null 2>&1
 sleep 5
 mysql -u $dbuser -p$dbpwd $dbuser -e "select * from options;" > /dev/null 2>&1
 result=$?
