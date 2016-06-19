@@ -27,7 +27,7 @@
                 "name": "name",
                 "ask": {
                     "en": "Choose a name for the GNU Social node",
-                    "fr": "Escoge un nombre para el nodo GNU Social"
+                    "es": "Escoge un nombre para el nodo GNU Social"
                 },
                 "example": "node"
             },
@@ -36,7 +36,7 @@
                 "type": "domain",
                 "ask": {
                     "en": "Choose a domain for GNU Social",
-                    "fr": "Escoge un dominio para GNU Social"
+                    "es": "Escoge un dominio para GNU Social"
                 },
                 "example": "domain.org"
             },
@@ -45,17 +45,17 @@
                 "type": "path",
                 "ask": {
                     "en": "Choose a path for GNU Social",
-                    "fr": "Escoge una ruta para GNU Social"
+                    "es": "Escoge una ruta para GNU Social"
                 },
-                "example": "/gs",
-                "default": "/gs"
+                "example": "gs",
+                "default": "gs"
             },
             {
                 "name": "admin",
                 "type": "user",
                 "ask": {
                     "en": "Choose the GNU Social administrator (must be an existing YunoHost user)",
-                    "fr": "Escoge un adminitrador para GNU Social (debe ser un usuario existente en Yunuhost)"
+                    "es": "Escoge un adminitrador para GNU Social (debe ser un usuario existente en Yunuhost)"
                 },
                 "example": "homer"
             },
@@ -63,7 +63,7 @@
                 "name": "profile",
                 "ask": {
                     "en": "What GNU Social profile?",
-                    "fr": "¿Qué perfil de GNU Social?"
+                    "es": "¿Qué perfil de GNU Social?"
                 },
                 "choices": ["Public", "Community", "Private"],
                 "default": "Public"
