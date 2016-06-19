@@ -3,7 +3,7 @@
 set -eu
 
 # Get multi-instances specific variables
-app=$YNH_APP_INSTANCE_NAME
+app=gnusocial
 
 # Retrieve arguments
 nodename=$1
