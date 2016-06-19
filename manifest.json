@@ -35,20 +35,10 @@
                 "name": "domain",
                 "type": "domain",
                 "ask": {
-                    "en": "Choose a domain for GNU Social",
-                    "es": "Escoge un dominio para GNU Social"
+                    "en": "Choose a SUBdomain for GNU Social",
+                    "es": "Escoge un SUBdominio para GNU Social"
                 },
-                "example": "domain.org"
-            },
-            {
-                "name": "path",
-                "type": "path",
-                "ask": {
-                    "en": "Choose a path for GNU Social",
-                    "es": "Escoge una ruta para GNU Social"
-                },
-                "example": "/gs",
-                "default": "/gs"
+                "example": "social.domain.org"
             },
             {
                 "name": "admin",
@@ -66,7 +56,7 @@
                     "es": "¿Qué perfil de GNU Social?"
                 },
                 "choices": ["Public", "Community", "Private"],
-                "default": "Public"
+                "default": "Community"
             }
         ]
     }
