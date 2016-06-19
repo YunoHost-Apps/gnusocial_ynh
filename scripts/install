@@ -50,6 +50,7 @@ sudo sed -i "s/yunouser/$dbuser/g" $final_path/config.php
 sudo sed -i "s/yunopass/$dbpwd/g" $final_path/config.php
 sudo sed -i "s/yunobase/$dbuser/g" $final_path/config.php
 sudo sed -i "s/gs_profile/$profile/g" $final_path/config.php
+
 }
 
 # Set permissions to gnusocial directory
@@ -58,7 +59,7 @@ sudo chown -R www-data: $final_path
 # Modify Nginx configuration file and copy it to Nginx conf directory
 sed -i "s@PATHTOCHANGE@$path@g" ../conf/nginx.conf*
 sed -i "s@ALIASTOCHANGE@$final_path/@g" ../conf/nginx.conf*
-sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/gnusocial.conf
+sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/$app.conf
 
 # Reload Nginx and regenerate SSOwat conf
 sudo service nginx reload
@@ -66,7 +67,9 @@ sudo yunohost app setting $app skipped_uris -v "/"
 sudo yunohost app ssowatconf
 
   # Gnu Social installation
-sudo php $final_path/scripts/install_cli.php --sitename=$nodename --server=$domain --path=$path --dbtype=mysql --host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin --admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile --fancy=true --ssl=always -v && change_config
+sudo php $final_pathscripts/install_cli.php --sitename=$nodename --server=$domain --path=$path --dbtype=mysql --host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin --admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile --fancy=true --ssl=always -v
+
+sleep 5
 
 # Start GNU Social queue daemon
 sudo bash $final_path/scripts/startdaemons.sh || echo "Queue daemon not started"
