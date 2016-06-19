@@ -8,9 +8,8 @@ app=$YNH_APP_INSTANCE_NAME
 # Retrieve arguments
 nodename=$1
 domain=$2
-path=$3
-admin=$4
-profile=$5
+admin=$3
+profile=$4
 
 # Set app specific variables
 dbname=$app
