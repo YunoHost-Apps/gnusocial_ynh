@@ -58,7 +58,7 @@ sudo sed -i "s/gs_profile/$profile/g" $final_path/config.php
 sudo chown -R www-data: $final_path
 
 # Modify Nginx configuration file and copy it to Nginx conf directory
-sed -i "s@PATHTOCHANGE@\/$path@g" ../conf/nginx.conf*
+sed -i "s@PATHTOCHANGE@\$path@g" ../conf/nginx.conf*
 sed -i "s@ALIASTOCHANGE@$final_path/@g" ../conf/nginx.conf*
 sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/$app.conf
 
@@ -68,7 +68,7 @@ sudo yunohost app setting $app skipped_uris -v "/"
 sudo yunohost app ssowatconf
 
   # Gnu Social installation
-sudo php $final_path$installphp --sitename=$nodename --server=$domain --path=$path --dbtype=mysql --host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin --admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile --fancy=true --ssl=always -v
+sudo php $final_path$installphp --sitename=$nodename --server=$domain --path=${path:1} --dbtype=mysql --host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin --admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile --fancy=true --ssl=always -v
 
 sleep 5
 

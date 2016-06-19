@@ -47,8 +47,8 @@
                     "en": "Choose a path for GNU Social",
                     "es": "Escoge una ruta para GNU Social"
                 },
-                "example": "gs",
-                "default": "gs"
+                "example": "/gs",
+                "default": "/gs"
             },
             {
                 "name": "admin",
