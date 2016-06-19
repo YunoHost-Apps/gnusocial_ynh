@@ -15,6 +15,7 @@ profile=$5
 # Set app specific variables
 dbname=$app
 dbuser=$app
+installphp=scripts/install_cli.php
 
 # Source app helpers
 . /usr/share/yunohost/helpers
@@ -67,7 +68,7 @@ sudo yunohost app setting $app skipped_uris -v "/"
 sudo yunohost app ssowatconf
 
   # Gnu Social installation
-sudo php $final_pathscripts/install_cli.php --sitename=$nodename --server=$domain --path=$path --dbtype=mysql --host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin --admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile --fancy=true --ssl=always -v
+sudo php $final_path$installphp --sitename=$nodename --server=$domain --path=$path --dbtype=mysql --host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin --admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile --fancy=true --ssl=always -v
 
 sleep 5
 
