@@ -28,7 +28,7 @@ ynh_app_setting_set $app admin_user $admin
 admin_mail=$(sudo yunohost user info $admin --json | python -c "import json,sys; print json.load(sys.stdin)['mail']")
 
 # Check domain/path availability
-sudo yunohost app checkurl $domain$path -a $app \
+sudo yunohost app checkurl $domain -a $app \
   || ynh_die "The path ${domain}${path} is not available for app installation."
 
 # Generate random password
