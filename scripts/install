@@ -15,7 +15,7 @@ profile=$5
 # Set app specific variables
 dbname=$app
 dbuser=$app
-installphp=scripts/install_cli.php
+installphp=/scripts/install_cli.php
 
 # Source app helpers
 . /usr/share/yunohost/helpers
