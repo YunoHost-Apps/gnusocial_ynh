@@ -65,7 +65,7 @@ sudo php $final_path$installphp --sitename=$nodename --server=$domain --dbtype=m
 
 sleep 1
 
-# Change variables in GNU Social configuration
+# Change variables in GNU social configuration
 sudo sed -i "s/gs_name/$nodename/g" $final_path/config.php
 sudo sed -i "s/gs_domain/$domain/g" $final_path/config.php
 sudo sed -i "s/yunouser/$dbuser/g" $final_path/config.php
