@@ -12,9 +12,6 @@ final_path=/var/www/$app
 # Source YunoHost helpers
 . /usr/share/yunohost/helpers
 
-# Retrieve app settings
-path=$(ynh_app_setting_get "$app" path)
-
 # Check domain/path availability
 sudo yunohost app checkurl $domain -a $app \
   || ynh_die "The url ${domain}${path} is not available for app update."
