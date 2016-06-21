@@ -12,10 +12,6 @@ final_path=/var/www/$app
 # Source YunoHost helpers
 . /usr/share/yunohost/helpers
 
-# Check domain/path availability
-sudo yunohost app checkurl $domain -a $app \
-  || ynh_die "The url ${domain}${path} is not available for app update."
-
 # Stop GNU social queue daemon
 sudo bash $final_path/scripts/stopdaemons.sh
 
