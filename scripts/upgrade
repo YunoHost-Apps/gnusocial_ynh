@@ -29,6 +29,9 @@ sudo chown -R www-data: $final_path
 sed -i "s@PATHTOCHANGE@$final_path/@g" ../conf/nginx.conf*
 sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/$app.conf
 
+sudo yunohost app setting $app skipped_uris -v "/"
+sudo yunohost app ssowatconf
+
 # Restart services
 sudo service nginx reload
 
