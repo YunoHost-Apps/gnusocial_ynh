@@ -19,17 +19,11 @@ dbpass=$(ynh_app_setting_get "$app" mysqlpwd)
 
 # Copy the app source files
 DESTDIR="/var/www/$app"
-ynh_backup "$DESTDIR" "www"
-
-# Copy the data directory
-DATADIR="/home/yunohost.app/${app}/data"
-ynh_backup "$DATADIR" "data" 1
+ynh_backup "$DESTDIR" "gnusocial-www"
 
 # Copy the conf files
 mkdir ./conf
 ynh_backup "/etc/nginx/conf.d/${domain}.d/${app}.conf" "conf/nginx.conf"
-ynh_backup "/etc/php5/fpm/pool.d/${app}.conf" "conf/php-fpm.conf"
-ynh_backup "/etc/cron.d/${app}" "conf/cron"
 
 # Dump the database
 mysqldump -u "$dbuser" -p"$dbpass" --no-create-db "$dbname" > ./gnusocialdb.sql

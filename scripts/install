@@ -42,6 +42,8 @@ final_path=/var/www/$app
 sudo mkdir -p $final_path
 sudo cp -a ../sources/. $final_path
 
+# Copy config.php file to app path
+sudo cp ../conf/config.php $final_path/config.php
 
 # Set permissions to gnusocial directory
 sudo chown -R www-data: $final_path
@@ -56,11 +58,12 @@ sudo yunohost app setting $app skipped_uris -v "/"
 sudo yunohost app ssowatconf
 
   # Gnu Social installation
-sudo php $final_path$installphp --sitename=$nodename --server=$domain --dbtype=mysql --host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin --admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile --fancy=true --ssl=always --skip-config
-sleep 1
+sudo php $final_path$installphp --sitename=$nodename --server=$domain --dbtype=mysql \
+--host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin \
+--admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile \
+--fancy=true --ssl=always --skip-config
 
-# Copy config.php file to app path
-sudo cp ../conf/config.php $final_path/config.php
+sleep 1
 
 # Change variables in GNU Social configuration
 sudo sed -i "s/gs_name/$nodename/g" $final_path/config.php
