@@ -58,10 +58,7 @@ sudo yunohost app setting $app skipped_uris -v "/"
 sudo yunohost app ssowatconf
 
   # Gnu Social installation
-sudo php $final_path$installphp --sitename=$nodename --server=$domain --dbtype=mysql \
---host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin \
---admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile \
---fancy=true --ssl=always --skip-config
+sudo php $final_path$installphp --sitename=$nodename --server=$domain --dbtype=mysql --host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin --admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile --fancy=true --ssl=always --skip-config
 
 sleep 1
 
