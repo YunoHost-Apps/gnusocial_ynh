@@ -29,7 +29,7 @@ admin_mail=$(sudo yunohost user info $admin --json | python -c "import json,sys;
 
 # Check domain/path availability
 sudo yunohost app checkurl $domain -a $app \
-  || ynh_die "The path ${domain}${path} is not available for app installation."
+  || ynh_die "The path ${domain} is not available for app installation."
 
 # Generate random password
 dbpwd=$(ynh_string_random)
@@ -41,12 +41,6 @@ ynh_mysql_create_db $dbname $dbuser $dbpwd
 final_path=/var/www/$app
 sudo mkdir -p $final_path
 sudo cp -a ../sources/. $final_path
-
-# Copy config.php file to app path
-sudo cp ../conf/config.php $final_path/config.php
-
-# Set permissions to gnusocial directory
-sudo chown -R www-data: $final_path
 
 # Modify Nginx configuration file and copy it to Nginx conf directory
 sed -i "s@PATHTOCHANGE@$final_path/@g" ../conf/nginx.conf*
@@ -61,6 +55,12 @@ sudo yunohost app ssowatconf
 sudo php $final_path$installphp --sitename=$nodename --server=$domain --dbtype=mysql --host=localhost --database=$dbname --username=$dbuser --password=$dbpwd --admin-nick=$admin --admin-pass=$dbpwd --admin-email=$admin_mail --site-profile=$profile --fancy=true --ssl=always --skip-config
 
 sleep 1
+
+# Copy config.php file to app path
+sudo cp ../conf/config.php $final_path/config.php
+
+# Set permissions to gnusocial directory
+sudo chown -R www-data: $final_path
 
 # Change variables in GNU social configuration
 sudo sed -i "s/gs_name/$nodename/g" $final_path/config.php
