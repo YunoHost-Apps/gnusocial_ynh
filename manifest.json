@@ -4,7 +4,7 @@
     "id": "gnusocial",
     "description": {
         "en": "Create a federated comunication node",
-        "fr": "Crea un nodo de comunicación federado"
+        "es": "Crea un nodo de comunicación federado"
     },
     "url": "https://www.gnu.io/",
     "maintainer": {
