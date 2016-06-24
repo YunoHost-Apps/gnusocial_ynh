@@ -56,7 +56,7 @@
                     "es": "¿Qué perfil de GNU Social?"
                 },
                 "choices": ["Public", "Community", "Private"],
-                "default": "Community"
+                "default": "Public"
             }
         ]
     }
