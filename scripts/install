@@ -27,6 +27,11 @@ ynh_app_setting_set $app admin_user $admin
 # Get admin email
 admin_mail=$(sudo yunohost user info $admin --json | python -c "import json,sys; print json.load(sys.stdin)['mail']")
 
+# Check if a subdomain is passed
+domain_len=$(echo $domain | python -c "print len((raw_input().split('.')))")
+if [[ $domain_len -le 2 ]]; then
+  ynh_die "This app needs a subdomain to work fine"; fi
+
 # Check domain/path availability
 sudo yunohost app checkurl $domain -a $app \
   || ynh_die "The path ${domain} is not available for app installation."
