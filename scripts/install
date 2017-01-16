@@ -15,7 +15,7 @@ profile=$4
 dbname=$app
 dbuser=$app
 installphp=/scripts/install_cli.php
-qvitter="addPlugin('Qvitter');"
+plugins=$(echo ../conf/plugins.conf)
 
 
 # Source app helpers
@@ -70,8 +70,8 @@ sleep 1
 # Set permissions to gnusocial directory
 sudo chown -R www-data: $final_path
 
-# Add Qvitter plugin
-echo $qvitter | sudo tee -a $final_path/config.php
+# Add GNU Social plugins
+echo $plugins | sudo tee -a $final_path/config.php
 
 # Start GNU Social queue daemon
 sudo bash $final_path/scripts/startdaemons.sh || ynh_die "Queue daemon not started"
