@@ -11,11 +11,10 @@ There are several profiles for a GNU Social node:
 
 - Public:  Registration for everybody is enabled.
 - Community: Ideal for a smalls groups. No open registration available.
-- Private: Nobody could see the node.
+- Private: Nobody outside could see the node.
 
 Be patient. So far this installation doesn't do the following:
 
-- LDAP logins
 - Single Sign On
 
 
