@@ -41,10 +41,12 @@ class LdapAuthorizationPlugin extends AuthorizationPlugin
             // TRANS: Exception thrown when initialising the LDAP Auth plugin fails because of an incorrect configuration.
             throw new Exception(_m('provider_name must be set. Use the provider_name from the LDAP Authentication plugin.'));
         }
-        if(!isset($this->uniqueMember_attribute)){
+    /*    if(!isset($this->uniqueMember_attribute)){
             // TRANS: Exception thrown when initialising the LDAP Auth plugin fails because of an incorrect configuration.
             throw new Exception(_m('uniqueMember_attribute must be set.'));
-        }
+        } 
+    */
+
         $this->ldapCommon = new LdapCommon(get_object_vars($this));
     }
 

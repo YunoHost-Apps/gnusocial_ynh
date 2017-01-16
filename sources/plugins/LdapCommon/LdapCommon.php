@@ -41,13 +41,13 @@ class LdapCommon
     public $port=null;
     public $version=null;
     public $starttls=null;
-    public $binddn=null;
-    public $bindpw=null;
+    //public $binddn=null;
+    //public $bindpw=null;
     public $basedn=null;
     public $options=null;
     public $filter=null;
     public $scope=null;
-    public $uniqueMember_attribute = null;
+    //public $uniqueMember_attribute = null;
     public $attributes=array();
     public $password_encoding=null;
 
@@ -214,6 +214,7 @@ class LdapCommon
 
     function is_dn_member_of_group($userDn, $groupDn)
     {
+        /*
         $ldap = $this->get_ldap_connection();
         $link = $ldap->getLink();
         $r = @ldap_compare($link, $groupDn, $this->uniqueMember_attribute, $userDn);
@@ -224,7 +225,9 @@ class LdapCommon
         }else{
             common_log(LOG_ERR, "LDAP error determining if userDn=$userDn is a member of groupDn=$groupDn using uniqueMember_attribute=$this->uniqueMember_attribute error: ".ldap_error($link));
             return false;
-        }
+        } 
+        Very, very dirty hack */ 
+        return true 
     }
 
     /**
