@@ -37,9 +37,9 @@
                 "name": "domain",
                 "type": "domain",
                 "ask": {
-                    "en": "Choose a SUBdomain for GNU Social",
+                    "en": "Choose a sub-domain for GNU Social",
                     "fr": "Choisissez un sous-domaine pour GNU Social",
-                    "es": "Escoge un SUBdominio para GNU Social"
+                    "es": "Escoge un sub-dominio para GNU Social"
                 },
                 "example": "social.domain.org"
             },
@@ -49,7 +49,7 @@
                 "ask": {
                     "en": "Choose the GNU Social administrator (must be an existing YunoHost user)",
                     "fr": "Choisissez un administrateur pour GNU Social",
-                    "es": "Escoge un adminitrador para GNU Social (debe ser un usuario existente en Yunuhost)"
+                    "es": "Escoge un administrador para GNU Social (debe ser un usuario existente en YunoHost)"
                 },
                 "example": "homer"
             },
