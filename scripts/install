@@ -71,7 +71,7 @@ sleep 1
 sudo chown -R www-data: $final_path
 
 # Add GNU Social plugins
-echo $plugins | sudo tee -a $final_path/config.php
+cat $plugins | sudo tee -a $final_path/config.php
 
 # Start GNU Social queue daemon
 sudo bash $final_path/scripts/startdaemons.sh || ynh_die "Queue daemon not started"

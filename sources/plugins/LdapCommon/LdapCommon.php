@@ -100,7 +100,7 @@ class LdapCommon
 
     function get_ldap_config(){
         $config = array();
-        $keys = array('host','port','version','starttls','binddn','bindpw','basedn','options','filter','scope');
+        $keys = array('host','port','version','starttls','basedn','options','filter','scope');
         foreach($keys as $key){
             $value = $this->$key;
             if($value!==null){
@@ -214,20 +214,9 @@ class LdapCommon
 
     function is_dn_member_of_group($userDn, $groupDn)
     {
-        /*
-        $ldap = $this->get_ldap_connection();
-        $link = $ldap->getLink();
-        $r = @ldap_compare($link, $groupDn, $this->uniqueMember_attribute, $userDn);
-        if ($r === true){
-            return true;
-        }else if($r === false){
-            return false;
-        }else{
-            common_log(LOG_ERR, "LDAP error determining if userDn=$userDn is a member of groupDn=$groupDn using uniqueMember_attribute=$this->uniqueMember_attribute error: ".ldap_error($link));
-            return false;
-        } 
-        Very, very dirty hack */ 
-        return true 
+        // Very, very dirty hack  
+     
+	return true;
     }
 
     /**
