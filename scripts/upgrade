@@ -15,24 +15,31 @@ final_path=/var/www/$app
 # Stop GNU social queue daemon
 sudo bash $final_path/scripts/stopdaemons.sh
 
-# Copy source files
-sudo cp -fa ../sources/. $final_path/
 
-# Set permissions to gnusocial directory
-sudo chown -R www-data: $final_path
+#TODO: Parse following two files.
+#      Since LDAP plugins are hacked for LDAP integration,
+#      copy hacked files before upgrade may work.
+#      Upgrade will overwrite the modified files.
+#      
+# Save hacked files
 
-# Modify Nginx configuration file and copy it to Nginx conf directory
-sed -i "s@PATHTOCHANGE@$final_path/@g" ../conf/nginx.conf*
-sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/$app.conf
+sudo cp $final_path/plugins/LdapCommon/LdapCommon.php /tmp/LdapCommon.php
+sudo cp $final_path/plugins/LdapAuthorization/LdapAuthorizationPlugin.php /tmp/LdapAuthorizationPlugin.php
 
-sudo yunohost app setting $app skipped_uris -v "/"
-sudo yunohost app ssowatconf
-
-# Restart services
-sudo service nginx reload
 
 # Launch GNU social upgrade script
 sudo php $final_path/scripts/upgrade.php
 
+# Restore hacked files
+sudo mv -f /tmp/LdapCommon.php $path/plugins/LdapCommon/LdapCommon.php 
+sudo mv -f /tmp/LdapAuthorizationPlugin.php $path/plugins/LdapAuthorization/LdapAuthorizationPlugin.php 
+
+# Change permisions 
+sudo chmod 640 $path/plugins/LdapCommon/LdapCommon.php 
+sudo chmod 640 $path/plugins/LdapAuthorization/LdapAuthorizationPlugin.php 
+
+
 # Start GNU social queue daemon
-sudo bash $final_path/scripts/startdaemons.sh#!/bin/bash
+sudo bash $final_path/scripts/startdaemons.sh
+
+

@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -eu
+
+# Set app specific variables
+dbname=$app
+dbuser=$app
+
+# Source app helpers
+source /usr/share/yunohost/helpers
+
+# Retrieve app settings
+domain=$(ynh_app_setting_get "$app" domain)
+path=$(ynh_app_setting_get "$app" path)
+dbpass=$(ynh_app_setting_get "$app" mysqlpwd)
+
+# Copy the app source files
+DESTDIR="/var/www/$app"
+ynh_backup "$DESTDIR" "www"
+
+# Copy the conf files
+mkdir ./conf
+ynh_backup "/etc/nginx/conf.d/${domain}.d/${app}.conf" "conf/nginx.conf"
+ynh_backup "/etc/php5/fpm/pool.d/${app}.conf" "conf/php-fpm.conf"
+ynh_backup "/etc/cron.d/${app}" "conf/cron"
+
+# Dump the database
+mysqldump -u "$dbuser" -p"$dbpass" --no-create-db "$dbname" > ./db.sql
+
+
