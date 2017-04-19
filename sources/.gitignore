@@ -29,6 +29,3 @@ php.log
 nbproject
 *.mo
 
-# The plugins
-/plugins/Qvitter/*
-/plugins/Markdown/*
