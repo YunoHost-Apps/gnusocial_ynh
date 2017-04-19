@@ -57,7 +57,7 @@ class GlobalApiAction extends Action
      * @return boolean continuation flag
      */
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         GNUsocial::setApi(true); // reduce exception reports to aid in debugging
 

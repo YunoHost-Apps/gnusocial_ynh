@@ -46,7 +46,7 @@ if (!defined('STATUSNET') && !defined('LACONICA')) {
  */
 class OembedproxyAction extends OembedAction
 {
-    function handle($args)
+    function handle()
     {
         // Trigger short error responses; not a human-readable web page.
         GNUsocial::setApi(true);

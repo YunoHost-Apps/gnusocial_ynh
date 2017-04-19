@@ -51,7 +51,7 @@ class OpenidtrustAction extends Action
         return _m('OpenID Identity Verification');
     }
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         common_ensure_session();
@@ -71,9 +71,9 @@ class OpenidtrustAction extends Action
         return true;
     }
 
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         if($_SERVER['REQUEST_METHOD'] == 'POST'){
             $this->handleSubmit();
         }else{

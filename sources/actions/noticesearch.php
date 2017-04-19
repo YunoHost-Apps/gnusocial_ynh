@@ -50,7 +50,7 @@ class NoticesearchAction extends SearchAction
 {
     protected $q = null;
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
 
@@ -65,8 +65,7 @@ class NoticesearchAction extends SearchAction
 
         if (!empty($this->q)) {
 
-            $profile = Profile::current();
-            $stream  = new SearchNoticeStream($this->q, $profile);
+            $stream  = new SearchNoticeStream($this->q, $this->scoped);
             $page    = $this->trimmed('page');
 
             if (empty($page)) {
@@ -186,7 +185,7 @@ class SearchNoticeList extends NoticeList {
         $this->terms = $terms;
     }
 
-    function newListItem($notice)
+    function newListItem(Notice $notice)
     {
         return new SearchNoticeListItem($notice, $this->out, $this->terms);
     }

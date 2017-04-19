@@ -81,25 +81,28 @@ class DBQueueManager extends QueueManager
         try {
             $item = $this->decode($qi->frame);
         } catch (Exception $e) {
-            $this->_log(LOG_INFO, "[{$qi->transport}] Discarding: ".$e->getMessage());
+            $this->_log(LOG_INFO, "[{$qi->transport}] Discarding: "._ve($e->getMessage()));
             $this->_done($qi);
             return true;
         }
 
         $rep = $this->logrep($item);
-        $this->_log(LOG_DEBUG, "Got {$rep} for transport {$qi->transport}");
-        
+        $this->_log(LOG_DEBUG, 'Got '._ve($rep).' for transport '._ve($qi->transport));
+
         try {
             $handler = $this->getHandler($qi->transport);
             $result = $handler->handle($item);
         } catch (NoQueueHandlerException $e) {
             $this->noHandlerFound($qi, $rep);
             return true;
+        } catch (NoResultException $e) {
+            $this->_log(LOG_ERR, "[{$qi->transport}:$rep] ".get_class($e).' thrown ('._ve($e->getMessage()).'), ignoring queue_item '._ve($qi->getID()));
+            $result = true;
         } catch (AlreadyFulfilledException $e) {
-            $this->_log(LOG_ERR, "[{$qi->transport}:$rep] AlreadyFulfilledException thrown: {$e->getMessage()}");
+            $this->_log(LOG_ERR, "[{$qi->transport}:$rep] ".get_class($e).' thrown ('._ve($e->getMessage()).'), ignoring queue_item '._ve($qi->getID()));
             $result = true;
         } catch (Exception $e) {
-            $this->_log(LOG_ERR, "[{$qi->transport}:$rep] Exception thrown: {$e->getMessage()}");
+            $this->_log(LOG_ERR, "[{$qi->transport}:$rep] Exception (".get_class($e).') thrown: '._ve($e->getMessage()));
             $result = false;
         }
 
@@ -145,8 +148,16 @@ class DBQueueManager extends QueueManager
     {
         if (empty($qi->claimed)) {
             $this->_log(LOG_WARNING, "[{$qi->transport}:item {$qi->id}] Ignoring failure for unclaimed queue item");
+            /* TwitterBridge issue or DBQueueManager issue ? Quick fix for https://git.gnu.io/gnu/gnu-social/issues/247 */
+            if($qi->transport=='tweetin'){
+                $qi->delete();
+            }
         } else {
             $qi->releaseClaim();
+            /* TwitterBridge issue or DBQueueManager issue ? Quick fix for https://git.gnu.io/gnu/gnu-social/issues/247 */
+            if($qi->transport=='tweetin'){
+                $qi->delete();
+            }
         }
 
         if (!$releaseOnly) {

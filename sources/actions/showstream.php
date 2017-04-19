@@ -113,6 +113,18 @@ class ShowstreamAction extends NoticestreamAction
                                           $this->target->getNickname(), $this->tag)));
         }
 
+        if (!$this->target->isLocal()) {
+            // remote profiles at least have Atom, but we can't guarantee anything else
+            return array(
+                     new Feed(Feed::ATOM,
+                              $this->target->getAtomFeed(),
+                              // TRANS: Title for link to notice feed.
+                              // TRANS: %s is a user nickname.
+                              sprintf(_('Notice feed for %s (Atom)'),
+                                      $this->target->getNickname()))
+                     );
+        }
+
         return array(new Feed(Feed::JSON,
                               common_local_url('ApiTimelineUser',
                                                array(
@@ -139,10 +151,7 @@ class ShowstreamAction extends NoticestreamAction
                               sprintf(_('Notice feed for %s (RSS 2.0)'),
                                       $this->target->getNickname())),
                      new Feed(Feed::ATOM,
-                              common_local_url('ApiTimelineUser',
-                                               array(
-                                                    'id' => $this->target->getID(),
-                                                    'format' => 'atom')),
+                              $this->target->getAtomFeed(),
                               // TRANS: Title for link to notice feed.
                               // TRANS: %s is a user nickname.
                               sprintf(_('Notice feed for %s (Atom)'),
@@ -155,18 +164,23 @@ class ShowstreamAction extends NoticestreamAction
                               sprintf(_('FOAF for %s'), $this->target->getNickname())));
     }
 
+    public function extraHeaders()
+    {
+        parent::extraHeaders();
+        // Publish all the rel="me" in the HTTP headers on our main profile page
+        if (get_class($this) == 'ShowstreamAction') {
+            foreach ($this->target->getRelMes() as $relMe) {
+                header('Link: <'.htmlspecialchars($relMe['href']).'>; rel="me"', false);
+            }
+        }
+    }
+
     function extraHead()
     {
         if ($this->target->bio) {
             $this->element('meta', array('name' => 'description',
                                          'content' => $this->target->getDescription()));
         }
-
-        // See https://wiki.mozilla.org/Microsummaries
-
-        $this->element('link', array('rel' => 'microsummary',
-                                     'href' => common_local_url('microsummary',
-                                                                array('nickname' => $this->target->getNickname()))));
 
         $rsd = common_local_url('rsd',
                                 array('nickname' => $this->target->getNickname()));
@@ -210,7 +224,7 @@ class ShowstreamAction extends NoticestreamAction
 
     function showNotices()
     {
-        $pnl = new NoticeList($this->notice, $this);
+        $pnl = new PrimaryNoticeList($this->notice, $this);
         $cnt = $pnl->show();
         if (0 == $cnt) {
             $this->showEmptyListMessage();
@@ -244,15 +258,6 @@ class ShowstreamAction extends NoticestreamAction
         $this->elementStart('div', array('id' => 'anon_notice'));
         $this->raw(common_markup_to_html($m));
         $this->elementEnd('div');
-    }
-
-    function showSections()
-    {
-        parent::showSections();
-        if (!common_config('performance', 'high')) {
-            $cloud = new PersonalTagCloudSection($this->target, $this);
-            $cloud->show();
-        }
     }
 
     function noticeFormOptions()

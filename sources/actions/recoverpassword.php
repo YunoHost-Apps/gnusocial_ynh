@@ -29,9 +29,9 @@ class RecoverpasswordAction extends Action
     var $msg = null;
     var $success = null;
 
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         if (common_logged_in()) {
             // TRANS: Client error displayed trying to recover password while already logged in.
             $this->clientError(_('You are already logged in!'));
@@ -79,13 +79,7 @@ class RecoverpasswordAction extends Action
 
         // Burn this code
 
-        $result = $confirm->delete();
-
-        if (!$result) {
-            common_log_db_error($confirm, 'DELETE', __FILE__);
-            // TRANS: Server error displayed removing a password recovery code from the database.
-            $this->serverError(_('Error with confirmation code.'));
-        }
+        $confirm->delete();
 
         // These should be reaped, but for now we just check mod time
         // Note: it's still deleted; let's avoid a second attempt!

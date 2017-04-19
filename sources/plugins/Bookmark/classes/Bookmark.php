@@ -162,19 +162,19 @@ class Bookmark extends Managed_DataObject
         $url = null;
         // each extra element is array('tagname', array('attr'=>'val', ...), 'content')
         foreach ($actobj->extra as $extra) {
-            if ($extra[1]['rel'] !== 'related') {
+            if ($extra[0] !== ActivityUtils::LINK || $extra[1][ActivityUtils::REL] !== 'related') {
                 continue;
             }
-            if ($url===null && strlen($extra[1]['href'])>0) {
-                $url = $extra[1]['href'];
+            if ($url===null && strlen($extra[1][ActivityUtils::HREF])>0) {
+                $url = $extra[1][ActivityUtils::HREF];
             } elseif ($url !== null) {
                 // TRANS: Client exception thrown when a bookmark is formatted incorrectly.
-                throw new ClientException(sprintf(_m('Expected exactly 1 link rel=related in a Bookmark, got %1$d.'), count($relLinkEls)));
+                throw new ClientException(sprintf(_m('Expected exactly 1 link rel=related in a Bookmark, got more than that.')));
             }
         }
         if (is_null($url)) {
             // TRANS: Client exception thrown when a bookmark is formatted incorrectly.
-            throw new ClientException(sprintf(_m('Expected exactly 1 link rel=related in a Bookmark, got %1$d.'), count($relLinkEls)));
+            throw new ClientException(sprintf(_m('Expected exactly 1 link rel=related in a Bookmark, got 0.')));
         }
 
         if (!strlen($actobj->title)) {

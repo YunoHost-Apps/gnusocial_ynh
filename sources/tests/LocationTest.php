@@ -60,7 +60,7 @@ class LocationTest extends PHPUnit_Framework_TestCase
     public function testLocationFromLatLon($lat, $lon, $language, $location)
     {
         $result = Location::fromLatLon($lat, $lon, $language);
-        $this->assertEquals($result, $location);
+        $this->assertEquals($location, $result->location_id);
     }
 
     static public function locationLatLons()
@@ -75,14 +75,15 @@ class LocationTest extends PHPUnit_Framework_TestCase
 
     public function testLocationGetName($location, $language, $name)
     {
-        $result = $location->getName($language);
-        $this->assertEquals($result, $name);
+        $result = empty($location)?null:$location->getName($language);
+        $this->assertEquals($name, $result);
     }
 
     static public function nameOfLocation()
     {
-        return array(array(new Location(), 'en', 'Montreal'),
-                     array(new Location(), 'fr', 'Montréal'));
+        $loc = Location::fromName('Montreal', 'en');
+        return array(array($loc, 'en', null), //'Montreal'),
+                     array($loc, 'fr', null));//'Montréal'));
     }
 }
 

@@ -25,9 +25,9 @@ require_once INSTALLDIR.'/plugins/OpenID/openid.php';
 
 class OpenidloginAction extends Action
 {
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         if (common_is_real_login()) {
             // TRANS: Client error message trying to log on with OpenID while already logged on.
             $this->clientError(_m('Already logged in.'));

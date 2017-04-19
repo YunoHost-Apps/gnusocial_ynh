@@ -53,7 +53,7 @@ class ApiTrendsAction extends ApiPrivateAuthAction
      *
      * @return boolean false if user doesn't exist
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         return true;
@@ -66,9 +66,9 @@ class ApiTrendsAction extends ApiPrivateAuthAction
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         $this->showTrends();
     }
 

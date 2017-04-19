@@ -28,12 +28,7 @@
  * @link      http://status.net/
  */
 
-if (!defined('STATUSNET') && !defined('LACONICA')) {
-    exit(1);
-}
-
-require_once INSTALLDIR.'/lib/noticelist.php';
-require_once INSTALLDIR.'/lib/feedlist.php';
+if (!defined('GNUSOCIAL')) { exit(1); }
 
 /**
  * Group main page
@@ -48,7 +43,6 @@ class ShowgroupAction extends GroupAction
 {
     /** page we're viewing. */
     var $page = null;
-    var $userProfile = null;
     var $notice = null;
 
     /**
@@ -82,85 +76,15 @@ class ShowgroupAction extends GroupAction
         }
     }
 
-    /**
-     * Prepare the action
-     *
-     * Reads and validates arguments and instantiates the attributes.
-     *
-     * @param array $args $_REQUEST args
-     *
-     * @return boolean success flag
-     */
-    protected function prepare(array $args=array())
+    public function getStream()
     {
-        parent::prepare($args);
-
-        $this->page = ($this->arg('page')) ? ($this->arg('page')+0) : 1;
-
-        $this->userProfile = Profile::current();
-
-        $user = common_current_user();
-
-        if (!empty($user) && $user->streamModeOnly()) {
-            $stream = new GroupNoticeStream($this->group, $this->userProfile);
+        if ($this->scoped instanceof Profile && $this->scoped->isLocal() && $this->scoped->getUser()->streamModeOnly()) {
+            $stream = new GroupNoticeStream($this->group, $this->scoped);
         } else {
-            $stream = new ThreadingGroupNoticeStream($this->group, $this->userProfile);
+            $stream = new ThreadingGroupNoticeStream($this->group, $this->scoped);
         }
 
-        $this->notice = $stream->getNotices(($this->page-1)*NOTICES_PER_PAGE,
-                                            NOTICES_PER_PAGE + 1);
-
-        common_set_returnto($this->selfUrl());
-
-        return true;
-    }
-
-    /**
-     * Handle the request
-     *
-     * Shows a profile for the group, some controls, and a list of
-     * group notices.
-     *
-     * @return void
-     */
-    protected function handle()
-    {
-        parent::handle();
-        $this->showPage();
-    }
-
-    /**
-     * Show the page content
-     *
-     * Shows a group profile and a list of group notices
-     */
-    function showContent()
-    {
-        $this->showGroupNotices();
-    }
-
-    /**
-     * Show the group notices
-     *
-     * @return void
-     */
-    function showGroupNotices()
-    {
-        $user = common_current_user();
-
-        if (!empty($user) && $user->streamModeOnly()) {
-            $nl = new PrimaryNoticeList($this->notice, $this, array('show_n'=>NOTICES_PER_PAGE));
-        } else {
-            $nl = new ThreadedNoticeList($this->notice, $this, $this->userProfile);
-        } 
-
-        $cnt = $nl->show();
-
-        $this->pagination($this->page > 1,
-                          $cnt > NOTICES_PER_PAGE,
-                          $this->page,
-                          'showgroup',
-                          array('nickname' => $this->group->nickname));
+        return $stream;
     }
 
     /**

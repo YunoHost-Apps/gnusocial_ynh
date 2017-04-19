@@ -131,6 +131,7 @@ function oid_check_immediate($openid_url, $backto=null)
 
 function oid_authenticate($openid_url, $returnto, $immediate=false)
 {
+    $openid_url = Auth_OpenID::normalizeUrl($openid_url);
     if (!common_valid_http_url($openid_url)) {
         throw new ClientException(_m('No valid URL provided for OpenID.'));
     }
@@ -359,9 +360,9 @@ class AutosubmitAction extends Action
     var $form_html = null;
     var $form_id = null;
 
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         $this->showPage();
     }
 

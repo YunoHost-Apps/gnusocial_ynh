@@ -52,7 +52,7 @@ class GroupblockAction extends RedirectingAction
      *
      * @return boolean success flag
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         if (!common_logged_in()) {
@@ -110,9 +110,9 @@ class GroupblockAction extends RedirectingAction
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($this->arg('no')) {
                 $this->returnToPrevious();

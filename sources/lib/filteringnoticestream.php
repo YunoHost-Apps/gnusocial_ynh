@@ -49,12 +49,15 @@ abstract class FilteringNoticeStream extends NoticeStream
 {
     protected $upstream;
 
-    function __construct($upstream)
+    function __construct(NoticeStream $upstream)
     {
         $this->upstream = $upstream;
     }
 
-    abstract function filter($notice);
+    /**
+     * @return boolean  true if we allow it, false if we deny it
+     */
+    abstract protected function filter(Notice $notice);
 
     function getNoticeIds($offset, $limit, $since_id, $max_id)
     {

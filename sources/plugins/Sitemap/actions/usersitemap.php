@@ -45,7 +45,7 @@ class UsersitemapAction extends SitemapAction
     var $users = null;
     var $j     = 0;
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
 

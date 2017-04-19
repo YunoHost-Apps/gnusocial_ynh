@@ -22,9 +22,9 @@ if (!defined('STATUSNET') && !defined('LACONICA')) { exit(1); }
 // @todo FIXME: documentation needed.
 class SupAction extends Action
 {
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         $seconds = $this->trimmed('seconds');
 

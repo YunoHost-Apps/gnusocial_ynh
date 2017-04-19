@@ -218,18 +218,30 @@ class Profile extends Managed_DataObject
     }
 
     /**
-     * Gets the full name (if filled) with nickname as a parenthetical, or the nickname alone
-     * if no fullname is provided.
+     * Gets the full name (if filled) with acct URI, URL, or URI as a
+     * parenthetical (in that order, for each not found). If no full
+     * name is found only the second part is returned, without ()s.
      *
      * @return string
      */
     function getFancyName()
     {
-        if ($this->fullname) {
-            // TRANS: Full name of a profile or group (%1$s) followed by nickname (%2$s) in parentheses.
-            return sprintf(_m('FANCYNAME','%1$s (%2$s)'), $this->fullname, $this->nickname);
+        $uri = null;
+        try {
+            $uri = $this->getAcctUri(false);
+        } catch (ProfileNoAcctUriException $e) {
+            try {
+                $uri = $this->getUrl();
+            } catch (InvalidUrlException $e) {
+                $uri = $this->getUri();
+            }
+        }
+
+        if (mb_strlen($this->getFullname()) > 0) {
+            // TRANS: The "fancy name": Full name of a profile or group (%1$s) followed by some URI (%2$s) in parentheses.
+            return sprintf(_m('FANCYNAME','%1$s (%2$s)'), $this->getFullname(), $uri);
         } else {
-            return $this->nickname;
+            return $uri;
         }
     }
 
@@ -266,7 +278,9 @@ class Profile extends Managed_DataObject
 
     function getTaggedNotices($tag, $offset=0, $limit=NOTICES_PER_PAGE, $since_id=0, $max_id=0)
     {
-        $stream = new TaggedProfileNoticeStream($this, $tag);
+        //FIXME: Get Profile::current() some other way to avoid possible
+        // confusion between current session profile and background processing.
+        $stream = new TaggedProfileNoticeStream($this, $tag, Profile::current());
 
         return $stream->getNotices($offset, $limit, $since_id, $max_id);
     }
@@ -819,19 +833,19 @@ class Profile extends Managed_DataObject
         $c = Cache::instance();
 
         if (!empty($c)) {
-            $cnt = $c->get(Cache::key('profile:notice_count:'.$this->id));
+            $cnt = $c->get(Cache::key('profile:notice_count:'.$this->getID()));
             if (is_integer($cnt)) {
                 return (int) $cnt;
             }
         }
 
         $notices = new Notice();
-        $notices->profile_id = $this->id;
-        $notices->verb = ActivityVerb::POST;        
-        $cnt = (int) $notices->count('distinct id');
+        $notices->profile_id = $this->getID();
+        $notices->verb = ActivityVerb::POST;
+        $cnt = (int) $notices->count('id'); // Not sure if I imagine this, but 'id' was faster than the defaulting 'uri'?
 
         if (!empty($c)) {
-            $c->set(Cache::key('profile:notice_count:'.$this->id), $cnt);
+            $c->set(Cache::key('profile:notice_count:'.$this->getID()), $cnt);
         }
 
         return $cnt;
@@ -900,13 +914,33 @@ class Profile extends Managed_DataObject
         return parent::update($dataObject);
     }
 
+    public function getRelSelf()
+    {
+        return ['href' => $this->getUrl(),
+                'text' => common_config('site', 'name'),
+                'image' => Avatar::urlByProfile($this)];
+    }
+
+    // All the known rel="me", used for the IndieWeb audience
+    public function getRelMes()
+    {
+        $relMes = array();
+        try {
+            $relMes[] = $this->getRelSelf();
+        } catch (InvalidUrlException $e) {
+            // no valid profile URL available
+        }
+        if (common_valid_http_url($this->getHomepage())) {
+            $relMes[] = ['href' => $this->getHomepage(),
+                         'text' => _('Homepage'),
+                         'image' => null];
+        }
+        Event::handle('OtherAccountProfiles', array($this, &$relMes));
+        return $relMes;
+    }
+
     function delete($useWhere=false)
     {
-        // just in case it hadn't been done before... (usually set before adding deluser to queue handling!)
-        if (!$this->hasRole(Profile_role::DELETED)) {
-            $this->grantRole(Profile_role::DELETED);
-        }
-
         $this->_deleteNotices();
         $this->_deleteSubscriptions();
         $this->_deleteTags();
@@ -918,6 +952,7 @@ class Profile extends Managed_DataObject
         // not on individual objects.
         $related = array('Reply',
                          'Group_member',
+        				 'Profile_role'
                          );
         Event::handle('ProfileDeleteRelated', array($this, &$related));
 
@@ -926,6 +961,8 @@ class Profile extends Managed_DataObject
             $inst->profile_id = $this->id;
             $inst->delete();
         }
+        
+        $this->grantRole(Profile_role::DELETED);
 
         $localuser = User::getKV('id', $this->id);
         if ($localuser instanceof User) {
@@ -1286,7 +1323,7 @@ class Profile extends Managed_DataObject
             case Right::EMAILONREPLY:
             case Right::EMAILONSUBSCRIBE:
             case Right::EMAILONFAVE:
-                $result = !$this->isSandboxed();
+                $result = !$this->isSandboxed() && !$this->isSilenced();
                 break;
             case Right::WEBLOGIN:
                 $result = !$this->isSilenced();
@@ -1493,6 +1530,14 @@ class Profile extends Managed_DataObject
         }
         return $url;
     }
+    public function getHtmlTitle()
+    {
+        try {
+            return $this->getAcctUri(false);
+        } catch (ProfileNoAcctUriException $e) {
+            return $this->getNickname();
+        }
+    }
 
     public function getNickname()
     {
@@ -1548,7 +1593,7 @@ class Profile extends Managed_DataObject
      *
      * @return string $uri
      */
-    public function getAcctUri()
+    public function getAcctUri($scheme=true)
     {
         $acct = null;
 
@@ -1559,24 +1604,27 @@ class Profile extends Managed_DataObject
         if ($acct === null) {
             throw new ProfileNoAcctUriException($this);
         }
+        if (parse_url($acct, PHP_URL_SCHEME) !== 'acct') {
+            throw new ServerException('Acct URI does not have acct: scheme');
+        }
 
-        return $acct;
+        // if we don't return the scheme, just remove the 'acct:' in the beginning
+        return $scheme ? $acct : mb_substr($acct, 5);
     }
 
-    function hasBlocked($other)
+    function hasBlocked(Profile $other)
     {
         $block = Profile_block::exists($this, $other);
         return !empty($block);
     }
 
-    function getAtomFeed()
+    public function getAtomFeed()
     {
         $feed = null;
 
         if (Event::handle('StartProfileGetAtomFeed', array($this, &$feed))) {
-            $user = User::getKV('id', $this->id);
-            if (!empty($user)) {
-                $feed = common_local_url('ApiTimelineUser', array('id' => $user->id,
+            if ($this->isLocal()) {
+                $feed = common_local_url('ApiTimelineUser', array('id' => $this->getID(),
                                                                   'format' => 'atom'));
             }
             Event::handle('EndProfileGetAtomFeed', array($this, $feed));

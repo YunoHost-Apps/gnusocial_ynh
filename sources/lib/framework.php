@@ -23,7 +23,7 @@ define('GNUSOCIAL_ENGINE', 'GNU social');
 define('GNUSOCIAL_ENGINE_URL', 'https://www.gnu.org/software/social/');
 
 define('GNUSOCIAL_BASE_VERSION', '1.2.0');
-define('GNUSOCIAL_LIFECYCLE', 'beta4'); // 'dev', 'alpha[0-9]+', 'beta[0-9]+', 'rc[0-9]+', 'release'
+define('GNUSOCIAL_LIFECYCLE', 'beta5'); // 'dev', 'alpha[0-9]+', 'beta[0-9]+', 'rc[0-9]+', 'release'
 
 define('GNUSOCIAL_VERSION', GNUSOCIAL_BASE_VERSION . '-' . GNUSOCIAL_LIFECYCLE);
 
@@ -56,6 +56,16 @@ define('NOTICE_INBOX_SOURCE_REPLY', 3);
 define('NOTICE_INBOX_SOURCE_FORWARD', 4);
 define('NOTICE_INBOX_SOURCE_PROFILE_TAG', 5);
 define('NOTICE_INBOX_SOURCE_GATEWAY', -1);
+
+/**
+ * StatusNet had this string as valid path characters: '\pN\pL\,\!\(\)\.\:\-\_\+\/\=\&\;\%\~\*\$\'\@'
+ * Some of those characters can be troublesome when auto-linking plain text. Such as "http://some.com/)"
+ * URL encoding should be used whenever a weird character is used, the following strings are not definitive.
+ */
+define('URL_REGEX_VALID_PATH_CHARS',        '\pN\pL\,\!\.\:\-\_\+\/\@\=\;\%\~\*');
+define('URL_REGEX_VALID_QSTRING_CHARS',     URL_REGEX_VALID_PATH_CHARS    . '\&');
+define('URL_REGEX_VALID_FRAGMENT_CHARS',    URL_REGEX_VALID_QSTRING_CHARS . '\?\#');
+define('URL_REGEX_EXCLUDED_END_CHARS',      '\?\.\,\!\#\:\'');  // don't include these if they are directly after a URL
 
 // append our extlib dir as the last-resort place to find libs
 

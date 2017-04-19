@@ -45,7 +45,7 @@ class ShortenAction extends Action
 {
     private $text;
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         $this->groups=array();
@@ -60,7 +60,7 @@ class ShortenAction extends Action
 
     function handle($args=null)
     {
-        parent::handle($args);
+        parent::handle();
         header('Content-Type: text/plain');
         $shortened_text = common_shorten_links($this->text);
         print $shortened_text;

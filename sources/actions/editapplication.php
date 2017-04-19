@@ -57,7 +57,7 @@ class EditApplicationAction extends Action
     /**
      * Prepare to run
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
 
@@ -94,9 +94,9 @@ class EditApplicationAction extends Action
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $this->handlePost($args);

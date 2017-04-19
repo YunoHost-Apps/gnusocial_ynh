@@ -242,9 +242,14 @@ class OStatusSubAction extends Action
     function pullRemoteProfile()
     {
         $validate = new Validate();
-        $this->profile_uri = $this->trimmed('profile');
         try {
-            if ($validate->email($this->profile_uri)) {
+            $this->profile_uri = Discovery::normalize($this->trimmed('profile'));
+        } catch (Exception $e) {
+            return false;
+        }
+
+        try {
+            if (Discovery::isAcct($this->profile_uri) && $validate->email(mb_substr($this->profile_uri, 5))) {
                 $this->oprofile = Ostatus_profile::ensureWebfinger($this->profile_uri);
             } else if ($validate->uri($this->profile_uri)) {
                 $this->oprofile = Ostatus_profile::ensureProfileURL($this->profile_uri);
@@ -387,7 +392,7 @@ class OStatusSubAction extends Action
     function title()
     {
         // TRANS: Page title for OStatus remote subscription form.
-        return _m('Confirm');
+        return !empty($this->profile_uri) ? _m('Confirm') : _m('Remote subscription');
     }
 
     /**

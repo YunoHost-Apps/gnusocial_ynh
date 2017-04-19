@@ -120,9 +120,9 @@ class RegisterAction extends Action
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         if (common_config('site', 'closed')) {
             // TRANS: Client error displayed when trying to register to a closed site.

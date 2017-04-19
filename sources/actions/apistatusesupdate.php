@@ -46,7 +46,7 @@
     /api/statuses/update.:format
 
     @par Formats (:format)
-    xml, json
+    xml, json, atom
 
     @par HTTP Method(s)
     POST
@@ -174,7 +174,7 @@ class ApiStatusesUpdateAction extends ApiAuthAction
             foreach (array_unique($matches[0]) as $match) {
                 try {
                     $this->media_ids[$match] = File::getByID($match);
-                } catch (EmptyIdException $e) {
+                } catch (EmptyPkeyValueException $e) {
                     // got a zero from the client, at least Twidere does this on occasion
                 } catch (NoResultException $e) {
                     // File ID was not found. Do we abort and report to the client?
@@ -339,6 +339,8 @@ class ApiStatusesUpdateAction extends ApiAuthAction
                 $this->showSingleXmlStatus($this->notice);
             } elseif ($this->format == 'json') {
                 $this->show_single_json_status($this->notice);
+            } elseif ($this->format == 'atom') {
+                $this->showSingleAtomStatus($this->notice);
             }
         }
     }

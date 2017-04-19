@@ -12,7 +12,7 @@ class GroupMemberList extends ProfileList
         $this->group = $group;
     }
 
-    function newListItem($profile)
+    function newListItem(Profile $profile)
     {
         return new GroupMemberListItem($profile, $this->group, $this->action);
     }

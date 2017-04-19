@@ -153,7 +153,7 @@ class GroupqueueAction extends GroupAction
 // @todo FIXME: documentation missing.
 class GroupQueueList extends GroupMemberList
 {
-    function newListItem($profile)
+    function newListItem(Profile $profile)
     {
         return new GroupQueueListItem($profile, $this->group, $this->action);
     }

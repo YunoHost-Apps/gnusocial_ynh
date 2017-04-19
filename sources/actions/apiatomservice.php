@@ -51,7 +51,7 @@ class ApiAtomServiceAction extends ApiBareAuthAction
      * @return boolean success flag
      *
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         $this->user = $this->getTargetUser($this->arg('id'));
@@ -71,9 +71,9 @@ class ApiAtomServiceAction extends ApiBareAuthAction
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         header('Content-Type: application/atomsvc+xml');
 

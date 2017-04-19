@@ -53,7 +53,7 @@ class PeopletaggedAction extends Action
         return true;
     }
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         $this->page = ($this->arg('page')) ? ($this->arg('page')+0) : 1;
@@ -117,9 +117,9 @@ class PeopletaggedAction extends Action
         }
     }
 
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         $this->showPage();
     }
 
@@ -167,7 +167,7 @@ class PeopletagMemberList extends ProfileList
         $this->peopletag = $peopletag;
     }
 
-    function newListItem($profile)
+    function newListItem(Profile $profile)
     {
         return new PeopletagMemberListItem($profile, $this->peopletag, $this->action);
     }

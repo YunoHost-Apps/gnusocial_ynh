@@ -106,9 +106,9 @@ class EmailRegistrationPlugin extends Plugin
             throw new ClientException(_m('Not a valid email address.'));
         }
 
-        $confirm = Confirm_address::getAddress($email, self::CONFIRMTYPE);
-
-        if (empty($confirm)) {
+        try {
+            $confirm = Confirm_address::getByAddress($email, self::CONFIRMTYPE);
+        } catch (NoResultException $e) {
             $confirm = Confirm_address::saveNew(null, $email, 'register');
         }
 
@@ -177,7 +177,7 @@ class EmailRegistrationPlugin extends Plugin
         $versions[] = array('name' => 'EmailRegistration',
                             'version' => GNUSOCIAL_VERSION,
                             'author' => 'Evan Prodromou',
-                            'homepage' => 'http://status.net/wiki/Plugin:EmailRegistration',
+                            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/EmailRegistration',
                             'rawdescription' =>
                             // TRANS: Plugin description.
                             _m('Use email only for registration.'));

@@ -63,7 +63,7 @@ class TagsubAction extends Action
      *
      * @return boolean success flag
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         if ($this->boolean('ajax')) {
@@ -118,7 +118,7 @@ class TagsubAction extends Action
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
         // Throws exception on error
 

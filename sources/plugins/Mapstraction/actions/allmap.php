@@ -27,9 +27,7 @@
  * @link      http://status.net/
  */
 
-if (!defined('STATUSNET')) {
-    exit(1);
-}
+if (!defined('GNUSOCIAL')) { exit(1); }
 
 /**
  * Show a map of user's notices
@@ -44,7 +42,7 @@ if (!defined('STATUSNET')) {
  */
 class AllmapAction extends MapAction
 {
-    function prepare($args)
+    function prepare(array $args = array())
     {
         if (parent::prepare($args)) {
             $stream = new InboxNoticeStream($this->user->getProfile(), $this->scoped);

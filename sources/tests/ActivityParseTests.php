@@ -15,6 +15,35 @@ require_once INSTALLDIR . '/lib/common.php';
 
 class ActivityParseTests extends PHPUnit_Framework_TestCase
 {
+
+    public function testMastodonRetweet() {
+        global $_mastodon_retweet;
+        $dom = DOMDocument::loadXML($_mastodon_retweet);
+        $feed = $dom->documentElement;
+        $entries = $feed->getElementsByTagName('entry');
+        $entry = $entries->item(0);
+        $act = new Activity($entry, $feed);
+        $this->assertFalse(empty($act));
+        $this->assertFalse(empty($act->objects[0]));
+
+        $object = $act->objects[0];
+        $this->assertEquals($object->verb, ActivityVerb::POST);
+    }
+
+    public function testGSReweet() {
+        global $_gs_retweet;
+        $dom = DOMDocument::loadXML($_gs_retweet);
+        $feed = $dom->documentElement;
+        $entries = $feed->getElementsByTagName('entry');
+        $entry = $entries->item(0);
+        $act = new Activity($entry, $feed);
+        $this->assertFalse(empty($act));
+        $this->assertFalse(empty($act->objects[0]));
+
+        $object = $act->objects[0];
+        $this->assertEquals($object->verb, ActivityVerb::POST);
+    }
+
     public function testExample1()
     {
         global $_example1;
