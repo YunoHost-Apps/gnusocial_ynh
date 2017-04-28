@@ -1,0 +1,3 @@
+SOURCE_URL=https://git.gnu.io/h2p/Qvitter/repository/archive.tar.gz?ref=155195c529bc5486628028d81eac7bdfa0f2646d
+SOURCE_FILE=Qvitter.155195c529bc5486628028d81eac7bdfa0f2646d.tar.gz
+SOURCE_DEST=/plugins/Qvitter/
