@@ -84,8 +84,8 @@ ynh_dl_sources () {
     mkdir -p "${DEST}"
     sudo chown $AS_USER: "${DEST}"
     # @todo local LOCAL_SOURCE="/opt/yunohost-apps-src/$YNH_APP_ID/"
-    if [ $(find ${PKG_DIR}/sources/ -type f -name "$SOURCE_ID-*.ini"  | wc -l) ]; then
-        (for appsource in ${PKG_DIR}/sources/$SOURCE_ID-*.ini; do \
+    if [ $(find ${PKG_DIR}/sources-list/ -type f -name "$SOURCE_ID-*.ini"  | wc -l) ]; then
+        (for appsource in ${PKG_DIR}/sources-list/$SOURCE_ID-*.ini; do \
             source "${appsource}"; \
             ynh_exec_as "$AS_USER" mkdir -p "${DEST}${SOURCE_DEST}"; \
             wget -nv $SOURCE_URL -O "${SOURCE_FILE}"; \
