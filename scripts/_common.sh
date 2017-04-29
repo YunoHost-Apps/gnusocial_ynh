@@ -74,13 +74,14 @@ ynh_patch_source () {
 # @todo : local source
 # @todo : other file type
 # @todo : more separation (adding function)
-# example: ynh_get_source "/var/www/gnusocial/"
+# example: ynh_dl_sources "/var/www/gnusocial/"
 #
-# usage: ynh_get_source DEST_DIR [USER [SOURCE_ID]]
+# usage: ynh_dl_sources DEST_DIR [USER [SOURCE_ID]]
 ynh_dl_sources () {
     local DEST=$1
     local AS_USER=${2:-admin}
     local SOURCE_ID=${3:-app}
+
     mkdir -p "${DEST}"
     sudo chown $AS_USER: "${DEST}"
     # @todo local LOCAL_SOURCE="/opt/yunohost-apps-src/$YNH_APP_ID/"
@@ -94,12 +95,15 @@ ynh_dl_sources () {
         done) || ynh_die "Unable to dowload source"
     fi
 }
-
 # Set up all sources files
 # example: ynh_setup_sources "/var/www/gnusocial/"
 #
 # usage: ynh_setup_sources DEST_DIR [USER [SOURCE_ID]]
 ynh_setup_sources () {
-    ynh_dl_sources ()
-    ynh_patch_source ()
+    local DEST=$1
+    local AS_USER=${2:-admin}
+    local SOURCE_ID=${3:-app}
+
+    ynh_dl_sources $DEST $AS_USER $SOURCE_ID
+    ynh_patch_source $DEST $AS_USER $SOURCE_ID
 }
