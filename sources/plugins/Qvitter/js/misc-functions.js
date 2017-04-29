@@ -38,6 +38,37 @@
   · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · */
 
 
+/* ·
+   ·
+   ·   Trigger click on <input type="file"> elements
+   ·
+   ·   @param inputFile: jQuery element to trigger click on
+   ·
+   · · · · · · · · · */
+
+function triggerClickOnInputFile(inputFile) {
+	if(typeof bowser != 'undefined') {
+		var bowserIntVersion = parseInt(bowser.version,10);
+		if(typeof bowser.chrome != 'undefined' && bowser.chrome === true && bowserIntVersion < 53
+		|| typeof bowser.opera != 'undefined' && bowser.opera === true && bowserIntVersion < 39
+		|| typeof bowser.safari != 'undefined' && bowser.safari === true && bowserIntVersion < 9) {
+			var evt = document.createEvent("HTMLEvents");
+			evt.initEvent("click", true, true);
+			inputFile[0].dispatchEvent(evt);
+			console.log('triggering click on on input file element with the old trigger hack for older browsers...');
+			}
+		else {
+			inputFile.trigger('click');
+			console.log('regular click triggered on input file element');
+			}
+		}
+	else {
+		inputFile.trigger('click');
+		console.log('no bowser object found: regular click triggered on input file element');
+		}
+	console.log(bowser);
+	}
+
 
 /* ·
    ·
@@ -461,7 +492,7 @@ function userIsBlocked(userId) {
    · · · · · · · · · */
 
 
-function markAllNoticesFromBlockedUsersAsBlockedInJQueryObject(obj) {
+function markAllNoticesFromBlockedUsersAsBlockedInJQueryObject(obj) {
 	$.each(window.allBlocking,function(){
 		obj.find('.stream-item[data-user-id="' + this + '"]').addClass('profile-blocked-by-me');
 		obj.find('.stream-item[data-user-id="' + this + '"]').children('.queet').attr('data-tooltip',window.sL.thisIsANoticeFromABlockedUser);
@@ -475,7 +506,7 @@ function markAllNoticesFromBlockedUsersAsBlockedInJQueryObject(obj) {
    ·
    · · · · · · · · · */
 
-function markAllNoticesFromMutedUsersAsMutedInJQueryObject(obj) {
+function markAllNoticesFromMutedUsersAsMutedInJQueryObject(obj) {
 
 	$.each(obj.find('.stream-item'),function(){
 		if(isUserMuted($(this).attr('data-user-id'))) {
@@ -496,7 +527,7 @@ function markAllNoticesFromMutedUsersAsMutedInJQueryObject(obj) {
    ·
    · · · · · · · · · */
 
-function markAllProfileCardsFromMutedUsersAsMutedInDOM() {
+function markAllProfileCardsFromMutedUsersAsMutedInDOM() {
 
 	$.each($('body').find('.profile-header-inner'),function(){
 		if(isUserMuted($(this).attr('data-user-id'))) {
@@ -699,7 +730,12 @@ function isLocalURL(url) {
 		return true;
 		}
 	else {
-		return false;
+		if(url.substring(0,window.siteAttachmentURLBase.length) == window.siteAttachmentURLBase) {
+			return true;
+			}
+		else {
+			return false;
+			}
 		}
 	}
 
@@ -857,6 +893,7 @@ function cacheSyntaxHighlightingGroups() {
 window.userArrayCache = new Object();
 window.convertUriToUserArrayCacheKey = new Object();
 window.convertStatusnetProfileUrlToUserArrayCacheKey = new Object();
+window.convertLocalIdToUserArrayCacheKey = new Object();
 
 function userArrayCacheStore(data) {
 
@@ -913,6 +950,7 @@ function userArrayCacheStore(data) {
 		window.userArrayCache[key].modified = Date.now();
 
 		// easy conversion between URI and statusnet_profile_url and the key we're using in window.userArrayCache
+		window.convertLocalIdToUserArrayCacheKey[parseInt(dataToStore.local.id, 10)] = key;
 		window.convertUriToUserArrayCacheKey[dataToStore.local.ostatus_uri] = key;
 		window.convertStatusnetProfileUrlToUserArrayCacheKey[dataToStore.local.statusnet_profile_url] = key;
 		}
@@ -927,6 +965,7 @@ function userArrayCacheStore(data) {
 			window.userArrayCache[key].local = dataToStore.local;
 
 			// easy conversion between URI and statusnet_profile_url and the key we're using in window.userArrayCache
+			window.convertLocalIdToUserArrayCacheKey[dataToStore.local.id] = key;
 			window.convertUriToUserArrayCacheKey[dataToStore.local.ostatus_uri] = key;
 			window.convertStatusnetProfileUrlToUserArrayCacheKey[dataToStore.local.statusnet_profile_url] = key;
 			}
@@ -938,7 +977,7 @@ function userArrayCacheStore(data) {
 			window.convertStatusnetProfileUrlToUserArrayCacheKey[dataToStore.external.statusnet_profile_url] = key;
 			}
 		// store the time when this record was modified
-		if(dataToStore.local || dataToStore.external) {
+		if(dataToStore.local || dataToStore.external) {
 			window.userArrayCache[key].modified = Date.now();
 			}
 		}
@@ -957,8 +996,12 @@ function userArrayCacheGetByLocalNickname(localNickname) {
 	}
 
 function userArrayCacheGetByProfileUrlAndNickname(profileUrl, nickname) {
+	var possibleLocalId = false;
 	if(nickname.substring(0,1) == '@') {
 		nickname = nickname.substring(1);
+		}
+	if(profileUrl.indexOf(window.siteInstanceURL + 'user/') == 0) {
+		possibleLocalId = parseInt(profileUrl.substring(window.siteInstanceURL.length+5),10);
 		}
 	// the url might match a known profile uri
 	if(typeof window.convertUriToUserArrayCacheKey[profileUrl] != 'undefined') {
@@ -970,6 +1013,12 @@ function userArrayCacheGetByProfileUrlAndNickname(profileUrl, nickname) {
 	else if(typeof window.convertStatusnetProfileUrlToUserArrayCacheKey[profileUrl] != 'undefined') {
 		if(typeof window.userArrayCache[window.convertStatusnetProfileUrlToUserArrayCacheKey[profileUrl]] != 'undefined') {
 			return window.userArrayCache[window.convertStatusnetProfileUrlToUserArrayCacheKey[profileUrl]];
+			}
+		}
+	// or the local id might match a known id
+	else if(typeof window.convertLocalIdToUserArrayCacheKey[possibleLocalId] != 'undefined') {
+		if(typeof window.userArrayCache[window.convertLocalIdToUserArrayCacheKey[possibleLocalId]] != 'undefined') {
+			return window.userArrayCache[window.convertLocalIdToUserArrayCacheKey[possibleLocalId]];
 			}
 		}
 	// or we try to guess the instance url, and see if we have a match in our cache
@@ -1005,7 +1054,9 @@ function userArrayCacheGetUserNicknameById(id) {
 function detectLocalOrExternalUserObject(userObject) {
 	var dataProfileImageUrlWithoutProtocol = removeProtocolFromUrl(userObject.profile_image_url);
 	var siteInstanceURLWithoutProtocol = removeProtocolFromUrl(window.siteInstanceURL);
-	if(dataProfileImageUrlWithoutProtocol.substring(0,siteInstanceURLWithoutProtocol.length) == siteInstanceURLWithoutProtocol){
+	if(dataProfileImageUrlWithoutProtocol.substring(0,siteInstanceURLWithoutProtocol.length) == siteInstanceURLWithoutProtocol
+		|| dataProfileImageUrlWithoutProtocol.substring(0,window.avatarServer.length) == window.avatarServer
+	){
 		return 'local';
 		}
 	else {
@@ -1046,6 +1097,11 @@ function guessInstanceUrlWithoutProtocolFromProfileUrlAndNickname(profileUrl, ni
 	while (guessedInstanceUrl.slice(-1) == '/') {
 		guessedInstanceUrl = guessedInstanceUrl.slice(0,-1);
 		}
+
+	// fix new mastodon style profile urls
+	if(guessedInstanceUrl.indexOf('/@') > -1) {
+		guessedInstanceUrl = guessedInstanceUrl.substring(0, guessedInstanceUrl.indexOf('/@'));
+	}
 
 	return guessedInstanceUrl;
 	}
@@ -1208,7 +1264,7 @@ function updateUserDataInStream() {
 			// profile urls
 			// try to find the last account group with this id, if the statusnet_profile_url seems to
 			// be changed we replace it wherever we can find it, even in list urls etc that starts with statusnet_profile_url
-			if($('a.account-group[data-user-id="' + userArray.local.id + '"]').last().attr('href') != userArray.local.statusnet_profile_url) {
+			if(userArray.local.is_local === true && $('a.account-group[data-user-id="' + userArray.local.id + '"]').last().attr('href') != userArray.local.statusnet_profile_url) {
 				var oldStatusnetProfileURL = $('a.account-group[data-user-id="' + userArray.local.id + '"]').last().attr('href');
 				// all links with the exact statusnet_profile_url
 				$.each($('[href="' + oldStatusnetProfileURL + '"]'),function(){
@@ -1733,7 +1789,7 @@ function validateRegisterForm(o) {
 	return allFieldsValid;
 	}
 
-function validEmail(email) {
+function validEmail(email) {
 	if(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(email)) {
 		return true;
 		}
@@ -1965,17 +2021,24 @@ function detectRTL(s) {
     	$streamItem.children('.stream-item').children('.queet').addClass('rtl');
     	}
     else {
-		// for ltr languages we move @, ! and # to inside
-    	$streamItem.find('.queet-text').find('.h-card.mention').prepend('@');
-    	$streamItem.find('.queet-text').find('.h-card.group').prepend('!');
-    	$streamItem.find('.queet-text').find('.vcard .fn.nickname:not(.group)').prepend('@'); // very old style
-        $streamItem.find('.queet-text').find('.vcard .nickname.mention:not(.fn)').prepend('@'); // old style
-    	$streamItem.find('.queet-text').find('.vcard .nickname.group').prepend('!'); // old style
-    	$streamItem.find('.queet-text').find('a[rel="tag"]').prepend('#');
+		// for ltr languages we move @, ! and # to inside (only because it looks better)
+    	prependCharIfItDoesntAlreadyExist($streamItem.find('.queet-text').find('.h-card.mention'),'@');
+		prependCharIfItDoesntAlreadyExist($streamItem.find('.queet-text').find('.h-card.group'),'!');
+		prependCharIfItDoesntAlreadyExist($streamItem.find('.queet-text').find('.vcard .fn.nickname:not(.group)'),'@'); // very old style
+		prependCharIfItDoesntAlreadyExist($streamItem.find('.queet-text').find('.vcard .nickname.mention:not(.fn)'),'@'); // old style
+		prependCharIfItDoesntAlreadyExist($streamItem.find('.queet-text').find('.vcard .nickname.group'),'!'); // old style
+		prependCharIfItDoesntAlreadyExist($streamItem.find('.queet-text').find('a[rel="tag"]'),'#');
     	}
 
 	// we remove @, ! and #, they are added as pseudo elements, or have been moved to the inside
    	return $streamItem.html().replace(/@<a/gi,'<a').replace(/!<a/gi,'<a').replace(/@<span class="vcard">/gi,'<span class="vcard">').replace(/!<span class="vcard">/gi,'<span class="vcard">').replace(/#<span class="tag">/gi,'<span class="tag">');
+	}
+
+
+function prependCharIfItDoesntAlreadyExist(jQueryObject,char) {
+	if(jQueryObject.text().substring(0,1) != char) {
+		jQueryObject.prepend(char);
+		}
 	}
 
 
@@ -2191,6 +2254,29 @@ function appendAllBookmarks(bookmarkContainer) {
 	$('#bookmark-container').sortable({delay: 100});
 	$('#bookmark-container').disableSelection();
 	}
+
+
+/* ·
+   ·
+   ·   Change the header of an item in the history container by href attribute
+   ·
+   · · · · · · · · · · · · · */
+
+function updateHistoryContainerItemByHref(href, streamHeader) {
+	$('#history-container .stream-selection[href="' + href + '"]').html(streamHeader + '<i class="chev-right" data-tooltip="' + window.sL.tooltipBookmarkStream + '"></i>');
+	updateHistoryLocalStorage();
+}
+
+/* ·
+   ·
+   ·   Remove items in the history container by href attribute
+   ·
+   · · · · · · · · · · · · · */
+
+function removeHistoryContainerItemByHref(href) {
+	$('#history-container .stream-selection[href="' + href + '"]').remove();
+	updateHistoryLocalStorage();
+}
 
 
 /* ·
@@ -2613,7 +2699,7 @@ function shortenUrlsInBox(shortenButton) {
 
 		display_spinner();
 
-		$.ajax({ url: window.urlShortenerAPIURL + '?format=jsonp&action=shorturl&signature=' + window.urlShortenerSignature + '&url=' + encodeURIComponent(url), type: "GET", dataType: "jsonp",
+		$.ajax({ url: window.urlShortenerAPIURL + '?format=' + window.urlshortenerFormat + '&action=shorturl&signature=' + window.urlShortenerSignature + '&url=' + encodeURIComponent(url), type: "GET", dataType: window.urlshortenerFormat,
 			success: function(data) {
 
 				if(typeof data.shorturl != 'undefined') {
@@ -2634,24 +2720,99 @@ function shortenUrlsInBox(shortenButton) {
 	}
 
 
+
+/* ·
+   ·
+   ·   Youtube ID from Youtube URL
+   ·
+   · · · · · · · · · · · · · */
+
+function youTubeIDFromYouTubeURL(url) {
+	return url.replace('https://youtube.com/watch?v=','').replace('http://youtube.com/watch?v=','').replace('http://www.youtube.com/watch?v=','').replace('https://www.youtube.com/watch?v=','').replace('http://youtu.be/','').replace('https://youtu.be/','').substr(0,11);
+	}
+
 /* ·
    ·
    ·   Youtube embed link from youtube url
    ·
    · · · · · · · · · · · · · */
 
-function youTubeEmbedLinkFromURL(url) {
-	var youtubeId = url.replace('http://www.youtube.com/watch?v=','').replace('https://www.youtube.com/watch?v=','').replace('http://youtu.be/','').replace('https://youtu.be/','').substr(0,11);
-
+function youTubeEmbedLinkFromURL(url, autoplay) {
 	// get start time hash
 	var l = document.createElement("a");
 	l.href = url;
+
+	var addStart = '';
 	if(l.hash.substring(0,3) == '#t=') {
-		return '//www.youtube.com/embed/' + youtubeId + '?start=' + l.hash.substring(3);
+		addStart = '&start=' + l.hash.substring(3);
 		}
-	else {
-		return '//www.youtube.com/embed/' + youtubeId;
+
+	var addAutoplay = '';
+	if(typeof autoplay != 'undefined' && autoplay === true) {
+		addAutoplay = '&autoplay=1';
 		}
+
+	return '//www.youtube.com/embed/' + youTubeIDFromYouTubeURL(url) + '?enablejsapi=1&version=3&playerapiid=ytplayer' + addStart + addAutoplay;
+	}
+
+/* ·
+   ·
+   ·   Vimeo ID from Vimeo URL
+   ·
+   · · · · · · · · · · · · · */
+
+function vimeoIDFromVimeoURL(url) {
+	id = url.replace('http://vimeo.com/','').replace('https://vimeo.com/','');
+	if(id.indexOf('#') > -1) {
+		id = id.substring(0,id.indexOf('#'));
+		}
+	return id;
+	}
+
+/* ·
+   ·
+   ·   Vimeo embed link from vimeo url
+   ·
+   · · · · · · · · · · · · · */
+
+function vimeoEmbedLinkFromURL(url, autoplay) {
+	// get start time hash
+	var l = document.createElement("a");
+	l.href = url;
+
+	var addStart = '';
+	if(l.hash.substring(0,3) == '#t=') {
+		addStart = l.hash;
+		}
+
+	var addAutoplay = '&autoplay=0';
+	if(typeof autoplay != 'undefined' && autoplay === true) {
+		addAutoplay = '&autoplay=1';
+		}
+
+	return 'https://player.vimeo.com/video/' + vimeoIDFromVimeoURL(url) + '?api=1' + addAutoplay + addStart;
+	}
+
+
+/* ·
+   ·
+   ·   CSS class name from URL
+   ·
+   · · · · · · · · · · · · · */
+
+function CSSclassNameByHostFromURL(url) {
+	var host = getHost(url);
+	if(host.indexOf('www.') === 0) {
+		host = host.substring(4);
+		}
+	host = host.toLowerCase().replace(/\./g, "-");
+	host = host.replace(/[^a-zA-Z0-9-]+/g, "_");
+
+	if(host == 'youtu-be') {
+		host = 'youtube-com';
+		}
+
+	return 'host-' + host;
 	}
 
 

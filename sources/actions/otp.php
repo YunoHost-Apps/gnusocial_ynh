@@ -53,7 +53,7 @@ class OtpAction extends Action
     var $returnto;
     var $lt;
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
 
@@ -110,9 +110,9 @@ class OtpAction extends Action
         return true;
     }
 
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         // success!
         if (!common_set_user($this->user)) {

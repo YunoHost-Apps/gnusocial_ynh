@@ -49,9 +49,9 @@ class SitemapAction extends Action
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         header('Content-Type: text/xml; charset=UTF-8');
         $this->startXML();

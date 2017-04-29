@@ -347,14 +347,16 @@ class BookmarkPlugin extends MicroAppPlugin
 
     function onEndUpgrade()
     {
+        printfnq('Making sure Bookmark notices have correct verb and object_type...');
+
         // Version 0.9.x of the plugin didn't stamp notices
         // with verb and object-type (for obvious reasons). Update
         // those notices here.
 
         $notice = new Notice();
         
-        $notice->whereAdd('exists (select uri from bookmark where bookmark.uri = notice.uri)');
-        $notice->whereAdd('((object_type is null) or (object_type = "' .ActivityObject::NOTE.'"))');
+        $notice->joinAdd(array('uri', 'bookmark:uri'));
+        $notice->whereAdd('object_type IS NULL OR object_type = '.$notice->_quote(ActivityObject::NOTE));
 
         $notice->find();
 
@@ -364,6 +366,8 @@ class BookmarkPlugin extends MicroAppPlugin
             $notice->object_type = ActivityObject::BOOKMARK;
             $notice->update($original);
         }
+
+        printfnq("DONE.\n");
     }
 
     public function activityObjectOutputJson(ActivityObject $obj, array &$out)

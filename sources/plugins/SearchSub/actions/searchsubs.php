@@ -136,7 +136,7 @@ class SearchSubsAction extends GalleryAction
 
 class SearchSubscriptionsList extends SubscriptionList
 {
-    function newListItem($searchsub)
+    function newListItem(Profile $searchsub)
     {
         return new SearchSubscriptionsListItem($searchsub, $this->owner, $this->action);
     }

@@ -50,16 +50,16 @@ class OpenidserverAction extends Action
 {
     var $oserver;
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         $this->oserver = oid_server();
         return true;
     }
 
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         $request = $this->oserver->decodeRequest();
         if (in_array($request->mode, array('checkid_immediate',
             'checkid_setup'))) {

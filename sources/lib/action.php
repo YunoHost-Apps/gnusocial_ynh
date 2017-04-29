@@ -490,10 +490,12 @@ class Action extends HTMLOutputter // lawsuit
 
         if (Event::handle('StartScriptVariables', array($this, &$vars))) {
             $vars['urlNewNotice'] = common_local_url('newnotice');
+            $vars['xhrTimeout'] = ini_get('max_execution_time')*1000;   // milliseconds
+            Event::handle('EndScriptVariables', array($this, &$vars));
         }
-        if (!empty($vars)) {
-            $this->inlineScript('SN.V = ' . json_encode($vars));
-        }
+
+        $this->inlineScript('SN.V = ' . json_encode($vars) . ';');
+
         return $vars;
     }
 
@@ -659,10 +661,14 @@ class Action extends HTMLOutputter // lawsuit
                     // if logo is an uploaded file, try to fall back to HTTPS file URL
                     $httpUrl = common_config('site', 'logo');
                     if (!empty($httpUrl)) {
-                        $f = File::getKV('url', $httpUrl);
-                        if (!empty($f) && !empty($f->filename)) {
-                            // this will handle the HTTPS case
-                            $logoUrl = File::url($f->filename);
+                        try {
+                            $f = File::getByUrl($httpUrl);
+                            if (!empty($f->filename)) {
+                                // this will handle the HTTPS case
+                                $logoUrl = File::url($f->filename);
+                            }
+                        } catch (NoResultException $e) {
+                            // no match
                         }
                     }
                 }

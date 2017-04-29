@@ -42,7 +42,7 @@ class TimelistAction extends Action {
      *
      * @return boolean true
      */
-    function prepare($args) {
+    function prepare(array $args = array()) {
         parent::prepare($args);
         $this->start = $this->arg('start');
         $this->duration = $this->boolean('duration', false);
@@ -56,9 +56,9 @@ class TimelistAction extends Action {
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         if (!common_logged_in()) {
             // TRANS: Error message displayed when trying to perform an action that requires a logged in user.

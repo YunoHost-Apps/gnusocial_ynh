@@ -442,10 +442,10 @@ class FeedSub extends Managed_DataObject
      */
     public function receive($post, $hmac)
     {
-        common_log(LOG_INFO, __METHOD__ . ": packet for \"" . $this->getUri() . "\"! $hmac $post");
+        common_log(LOG_INFO, sprintf(__METHOD__.': packet for %s with HMAC %s', _ve($this->getUri()), _ve($hmac)));
 
         if (!in_array($this->sub_state, array('active', 'nohub'))) {
-            common_log(LOG_ERR, __METHOD__ . ": ignoring PuSH for inactive feed " . $this->getUri() . " (in state '$this->sub_state')");
+            common_log(LOG_ERR, sprintf(__METHOD__.': ignoring PuSH for inactive feed %s (in state %s)', _ve($this->getUri()), _ve($this->sub_state)));
             return;
         }
 
@@ -480,7 +480,7 @@ class FeedSub extends Managed_DataObject
      * shared secret that was set up at subscription time.
      *
      * If we don't have a shared secret, there should be no signature.
-     * If we we do, our the calculated HMAC should match theirs.
+     * If we do, our calculated HMAC should match theirs.
      *
      * @param string $post raw XML source as POSTed to us
      * @param string $hmac X-Hub-Signature HTTP header value, or empty
@@ -489,29 +489,36 @@ class FeedSub extends Managed_DataObject
     protected function validatePushSig($post, $hmac)
     {
         if ($this->secret) {
-            if (preg_match('/^sha1=([0-9a-fA-F]{40})$/', $hmac, $matches)) {
-                $their_hmac = strtolower($matches[1]);
-                $our_hmac = hash_hmac('sha1', $post, $this->secret);
+            // {3,16} because shortest hash algorithm name is 3 characters (md2,md4,md5) and longest
+            // is currently 11 characters, but we'll leave some margin in the end...
+            if (preg_match('/^([0-9a-zA-Z\-\,]{3,16})=([0-9a-fA-F]+)$/', $hmac, $matches)) {
+                $hash_algo  = strtolower($matches[1]);
+                $their_hmac = strtolower($matches[2]);
+                common_debug(sprintf(__METHOD__ . ': PuSH from feed %s uses HMAC algorithm %s with value: %s', _ve($this->getUri()), _ve($hash_algo), _ve($their_hmac)));
+
+                if (!in_array($hash_algo, hash_algos())) {
+                    // We can't handle this at all, PHP doesn't recognize the algorithm name ('md5', 'sha1', 'sha256' etc: https://secure.php.net/manual/en/function.hash-algos.php)
+                    common_log(LOG_ERR, sprintf(__METHOD__.': HMAC algorithm %s unsupported, not found in PHP hash_algos()', _ve($hash_algo)));
+                    return false;
+                } elseif (!is_null(common_config('security', 'hash_algos')) && !in_array($hash_algo, common_config('security', 'hash_algos'))) {
+                    // We _won't_ handle this because there is a list of accepted hash algorithms and this one is not in it.
+                    common_log(LOG_ERR, sprintf(__METHOD__.': Whitelist for HMAC algorithms exist, but %s is not included.', _ve($hash_algo)));
+                    return false;
+                }
+
+                $our_hmac = hash_hmac($hash_algo, $post, $this->secret);
                 if ($their_hmac === $our_hmac) {
                     return true;
                 }
-                if (common_config('feedsub', 'debug')) {
-                    $tempfile = tempnam(sys_get_temp_dir(), 'feedsub-receive');
-                    if ($tempfile) {
-                        file_put_contents($tempfile, $post);
-                    }
-                    common_log(LOG_ERR, __METHOD__ . ": ignoring PuSH with bad SHA-1 HMAC: got $their_hmac, expected $our_hmac for feed " . $this->getUri() . " on $this->huburi; saved to $tempfile");
-                } else {
-                    common_log(LOG_ERR, __METHOD__ . ": ignoring PuSH with bad SHA-1 HMAC: got $their_hmac, expected $our_hmac for feed " . $this->getUri() . " on $this->huburi");
-                }
+                common_log(LOG_ERR, sprintf(__METHOD__.': ignoring PuSH with bad HMAC hash: got %s, expected %s for feed %s from hub %s', _ve($their_hmac), _ve($our_hmac), _ve($this->getUri()), _ve($this->huburi)));
             } else {
-                common_log(LOG_ERR, __METHOD__ . ": ignoring PuSH with bogus HMAC '$hmac'");
+                common_log(LOG_ERR, sprintf(__METHOD__.': ignoring PuSH with bogus HMAC==', _ve($hmac)));
             }
         } else {
             if (empty($hmac)) {
                 return true;
             } else {
-                common_log(LOG_ERR, __METHOD__ . ": ignoring PuSH with unexpected HMAC '$hmac'");
+                common_log(LOG_ERR, sprintf(__METHOD__.': ignoring PuSH with unexpected HMAC==%s', _ve($hmac)));
             }
         }
         return false;

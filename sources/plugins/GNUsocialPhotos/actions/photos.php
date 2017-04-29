@@ -38,7 +38,7 @@ class PhotosAction extends Action
 {
     var $user = null;
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
 
@@ -53,9 +53,9 @@ class PhotosAction extends Action
         return true;
     }
 
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         $this->showPage();
     }
 

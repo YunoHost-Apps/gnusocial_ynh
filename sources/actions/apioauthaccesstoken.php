@@ -52,9 +52,9 @@ class ApiOAuthAccessTokenAction extends ApiOAuthAction
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         $datastore   = new ApiGNUsocialOAuthDataStore();
         $server      = new OAuthServer($datastore);

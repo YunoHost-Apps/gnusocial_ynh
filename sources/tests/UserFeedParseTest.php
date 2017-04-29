@@ -61,7 +61,7 @@ class UserFeedParseTests extends PHPUnit_Framework_TestCase
         $this->assertEquals($poco->address->formatted, 'El Cerrito, CA');
         $this->assertEquals($poco->urls[0]->type, 'homepage');
         $this->assertEquals($poco->urls[0]->value, 'http://zach.copley.name');
-        $this->assertEquals($poco->urls[0]->primary, 'true');
+        $this->assertEquals($poco->urls[0]->primary, true);
         $this->assertEquals($poco->note, 'Zach Hack Attack');
 
         // test the post

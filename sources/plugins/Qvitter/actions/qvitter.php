@@ -45,6 +45,20 @@ class QvitterAction extends ApiAction
     {
         parent::prepare($args);
 
+        // redirect user/:id for local users to their nickname url
+		if(substr($_SERVER['REQUEST_URI'],0,6) == '/user/') {
+			$user_id = substr($_SERVER['REQUEST_URI'],6);
+			try {
+                $user = User::getKV('id', $user_id);
+                if($user instanceof User) {
+                    $nickname = $user->nickname;
+                    common_redirect(common_local_url('showstream',array('nickname'=>$nickname)), 303);
+                    }
+            } catch (Exception $e) {
+                //
+            }
+        }
+
         $user = common_current_user();
 
         return true;
@@ -84,7 +98,15 @@ class QvitterAction extends ApiAction
 		$siterootdomain = common_config('site','server');
 		$qvitterpath = Plugin::staticPath('Qvitter', '');
 		$apiroot = common_path('api/', StatusNet::isHTTPS());
-		$attachmentroot = common_path('attachment/', StatusNet::isHTTPS());
+
+		$attachmentconfig=common_config('attachments');
+		if(StatusNet::isHTTPS() && $attachmentconfig['sslserver']){
+			$attachmentroot ='https://'.$attachmentconfig['sslserver'].$attachmentconfig['path'];
+		} elseif(!StatusNet::isHTTPS() && $attachmentconfig['server']) {
+			$attachmentroot ='http://'.$attachmentconfig['server'].$attachmentconfig['path'];
+		} else {
+			$attachmentroot = common_path('attachment/', StatusNet::isHTTPS());
+		}
 		$instanceurl = common_path('', StatusNet::isHTTPS());
         $favicon_path = QvitterPlugin::settings("favicon_path");
 
@@ -159,15 +181,19 @@ class QvitterAction extends ApiAction
 							print '				<link href="'.$instanceurl.$nickname.'/microsummary" rel="microsummary">'."\n";
 
                             // rel="me" for the IndieWeb audience
-                            $relMes = array(
-                                ['href' => $user->getProfile()->getHomepage(),
-                                 'text' => _('Homepage'),
-                                 'image' => null],
-                            );
-                            Event::handle('OtherAccountProfiles', array($user->getProfile(), &$relMes));
-							foreach ($relMes as $relMe) {
-                                print '				<link href="'.htmlspecialchars($relMe['href']).'" title="'.$relMe['text'].'" rel="me" />'."\n";
-                            }
+                            // (no indieweb for users of older gnu social versions)
+                            if(method_exists('Profile','getHomepage')) {
+                                $user_homepage = $user->getProfile()->getHomepage();
+                                $relMes = array(
+                                    ['href' => $user->getProfile()->getHomepage(),
+                                     'text' => _('Homepage'),
+                                     'image' => null],
+                                    );
+                                Event::handle('OtherAccountProfiles', array($user->getProfile(), &$relMes));
+    							foreach ($relMes as $relMe) {
+                                    print '				<link href="'.htmlspecialchars($relMe['href']).'" title="'.$relMe['text'].'" rel="me" />'."\n";
+                                    }
+                                }
 
 							// maybe openid
 							if (array_key_exists('OpenID', StatusNet::getActivePlugins())) {
@@ -244,6 +270,16 @@ class QvitterAction extends ApiAction
                                 $notice_url = $notice->getUrl();
                                 print '<link title="oEmbed" href="'.common_local_url('apiqvitteroembednotice', array('id' => $notice->id, 'format'=>'json')).'?url='.urlencode($notice_url).'" type="application/json+oembed" rel="alternate">'."\n";
                                 print '<link title="oEmbed" href="'.common_local_url('apiqvitteroembednotice', array('id' => $notice->id, 'format'=>'xml')).'?url='.urlencode($notice_url).'" type="application/xml+oembed" rel="alternate">'."\n";
+                            } catch (Exception $e) {
+                                //
+                            }
+
+                            // single notice feeds
+                            try {
+                                $single_notice_json = common_local_url('ApiStatusesShow', array( 'id' => $notice->getID(),'format' => 'json'));
+                                $single_notice_atom = common_local_url('ApiStatusesShow', array( 'id' => $notice->getID(),'format' => 'atom'));
+                                print '<link title="Single notice (JSON)" href="'.$single_notice_json.'" type="application/stream+json" rel="alternate">'."\n";
+                                print '<link title="Single notice (Atom)" href="'.$single_notice_atom.'" type="application/atom+xml" rel="alternate">'."\n";
                             } catch (Exception $e) {
                                 //
                             }
@@ -337,6 +373,7 @@ class QvitterAction extends ApiAction
 					window.fullUrlToThisQvitterApp = '<?php print $qvitterpath; ?>';
 					window.siteRootDomain = '<?php print $siterootdomain; ?>';
 					window.siteInstanceURL = '<?php print $instanceurl; ?>';
+					window.avatarServer= <?php print json_encode(common_config('avatar', 'server')) ?>;
 					window.defaultLinkColor = '<?php print QvitterPlugin::settings("defaultlinkcolor"); ?>';
 					window.defaultBackgroundColor = '<?php print QvitterPlugin::settings("defaultbackgroundcolor"); ?>';
 					window.siteBackground = '<?php print QvitterPlugin::settings("sitebackground"); ?>';
@@ -344,6 +381,7 @@ class QvitterAction extends ApiAction
 					window.customWelcomeText = <?php print json_encode(QvitterPlugin::settings("customwelcometext")); ?>;
 					window.urlShortenerAPIURL = '<?php print QvitterPlugin::settings("urlshortenerapiurl"); ?>';
 					window.urlShortenerSignature = '<?php print QvitterPlugin::settings("urlshortenersignature"); ?>';
+                    window.urlshortenerFormat = '<?php print QvitterPlugin::settings("urlshortenerformat"); ?>';
 					window.commonSessionToken = '<?php print common_session_token(); ?>';
 					window.siteMaxThumbnailSize = <?php print common_config('thumbnail', 'maxsize'); ?>;
 					window.siteAttachmentURLBase = '<?php print $attachmentroot; ?>';
@@ -374,6 +412,21 @@ class QvitterAction extends ApiAction
                                 print 'window.qvitterProfilePrefs = false;';
                                 }
                             }
+
+                        // keyboard shortcuts can be disabled
+                        $disable_keyboard_shortcuts = false;
+                        if($logged_in_user) {
+                            try {
+                                $disable_keyboard_shortcuts = Profile_prefs::getData($logged_in_user->getProfile(), 'qvitter', 'disable_keyboard_shortcuts');
+                                if($disable_keyboard_shortcuts == '1' || $disable_keyboard_shortcuts == 1) {
+                                    $disable_keyboard_shortcuts = true;
+                                }
+                            } catch (Exception $e) {
+                                //
+                                }
+                            }
+                        print 'window.disableKeyboardShortcuts = '.var_export($disable_keyboard_shortcuts, true).';';
+
                     ?>
 
 					// available language files and their last update time
@@ -397,11 +450,12 @@ class QvitterAction extends ApiAction
 							}
 
 						// also make an array with all language names, to use for generating menu
-						$languagecodesandnames[$lancode]['english_name'] = Locale::getDisplayLanguage($lancode, 'en');
-						$languagecodesandnames[$lancode]['name'] = Locale::getDisplayLanguage($lancode, $lancode);
-						if(Locale::getDisplayRegion($lancode, $lancode)) {
-							$languagecodesandnames[$lancode]['name'] .= ' ('.Locale::getDisplayRegion($lancode, $lancode).')'.$rtl_or_ltr_special_char;
-							}
+						$languagecodesandnames[$lancode]['english_name'] = Locale::getDisplayName($lancode, 'en');
+						$languagecodesandnames[$lancode]['name'] = Locale::getDisplayName($lancode, $lancode);
+                        $languagecodesandnames[$lancode]['tooltip'] = $languagecodesandnames[$lancode]['name'].' – '.$languagecodesandnames[$lancode]['english_name'];
+                        if($languagecodesandnames[$lancode]['name'] == $languagecodesandnames[$lancode]['english_name']) {
+                            $languagecodesandnames[$lancode]['tooltip'] = $languagecodesandnames[$lancode]['english_name'];
+                        }
 
 						// ahorita meme only on quitter.es
 						if($lancode == 'es_ahorita') {
@@ -484,8 +538,16 @@ class QvitterAction extends ApiAction
 						<li class="fullwidth dropdown-divider"></li>
                         <li class="fullwidth"><a id="faq-link"></a></li>
                         <li class="fullwidth"><a id="tou-link"></a></li>
-                        <li class="fullwidth"><a id="shortcuts-link"></a></li>
-						<?php if (common_config('invite', 'enabled') && !common_config('site', 'closed')) { ?>
+                        <?php
+
+                        if($disable_keyboard_shortcuts === true)  {
+                            print '<li class="fullwidth"><a id="shortcuts-link" class="disabled" href="'.$instanceurl.'settings/qvitter"></a></li>';
+					        }
+                        else {
+                            print '<li class="fullwidth"><a id="shortcuts-link"></a></li>';
+                            }
+
+                        if (common_config('invite', 'enabled') && !common_config('site', 'closed')) { ?>
 							<li class="fullwidth"><a id="invite-link" href="<?php print $instanceurl; ?>main/invite"></a></li>
 						<?php } ?>
 						<li class="fullwidth"><a id="classic-link"></a></li>
@@ -496,7 +558,7 @@ class QvitterAction extends ApiAction
 
 						// languages
 						foreach($languagecodesandnames as $lancode=>$lan) {
-							print '<li class="language"><a class="language-link" title="'.$lan['english_name'].'" data-lang-code="'.$lancode.'">'.$lan['name'].'</a></li>';
+							print '<li class="language"><a class="language-link" data-tooltip="'.$lan['tooltip'].'" data-lang-code="'.$lancode.'">'.$lan['name'].'</a></li>';
 							}
 
 						?>
@@ -530,7 +592,7 @@ class QvitterAction extends ApiAction
 
 											// languages
 											foreach($languagecodesandnames as $lancode=>$lan) {
-												print '<li><a class="language-link" title="'.$lan['english_name'].'" data-lang-code="'.$lancode.'">'.$lan['name'].'</a></li>';
+												print '<li><a class="language-link" data-tooltip="'.$lan['english_name'].'" data-lang-code="'.$lancode.'">'.$lan['name'].'</a></li>';
 												}
 
 											?>
@@ -592,8 +654,12 @@ class QvitterAction extends ApiAction
     							<button id="signup-btn-step1" class="signup-btn" type="submit"></button>
     						</div>
                             <div id="other-servers-link"></div><?php }
-                            ?><div id="qvitter-notice-logged-out"><?php print common_config('site', 'qvitternoticeloggedout'); ?></div>
-                        </div><?php
+                            ?><div id="qvitter-notice-logged-out"><?php print common_config('site', 'qvitternoticeloggedout'); ?></div><?php
+
+                            // event for other plugins to add html to the logged in sidebar
+                            Event::handle('QvitterEndShowSidebarLoggedOut', array($this));
+
+                            ?></div><?php
                         }
 
                     // box containing the logged in users queet count and compose form
@@ -643,10 +709,15 @@ class QvitterAction extends ApiAction
                                 ?>
         						</div>
         						<div class="menu-container" id="bookmark-container"></div>
+                                <div id="find-someone"><input id="find-someone-input" placeholder="" data-tooltip=""/></div>
                                 <div class="menu-container" id="history-container"></div>
                                 <div id="clear-history"></div>
-        						<div id="qvitter-notice"><?php print common_config('site', 'qvitternotice'); ?></div>
-        					</div><?php
+        						<div id="qvitter-notice"><?php print common_config('site', 'qvitternotice'); ?></div><?php
+
+                	            // event for other plugins to add html to the logged in sidebar
+                	            Event::handle('QvitterEndShowSidebarLoggedIn', array($this));
+
+        				        ?></div><?php
                             } ?>
 
                     <div id="feed">
@@ -733,7 +804,8 @@ class QvitterAction extends ApiAction
 					ul.stats a strong,
 					.queet-box-extras button,
 					#openid-login:hover:after,
-                    .post-to-group {
+                    .post-to-group,
+                    .stream-item-header .addressees .reply-to .h-card.not-mentioned-inline {
 						color:/*COLORSTART*/<?php print QvitterPlugin::settings("defaultlinkcolor"); ?>/*COLOREND*/;
 						}
 					#unseen-notifications,
@@ -761,7 +833,8 @@ class QvitterAction extends ApiAction
 						}
 					#user-footer-inner,
 					.inline-reply-queetbox,
-					#popup-faq #faq-container p.indent {
+					#popup-faq #faq-container p.indent,
+                    #find-someone {
 						background-color:/*LIGHTERBACKGROUNDCOLORSTART*/rgb(205,230,239)/*LIGHTERBACKGROUNDCOLOREND*/;
 						}
 					#user-footer-inner,
@@ -775,7 +848,8 @@ class QvitterAction extends ApiAction
                     .quoted-notice:hover,
                     .oembed-item:hover,
                     .stream-item:hover:not(.expanded) .quoted-notice:hover,
-                    .stream-item:hover:not(.expanded) .oembed-item:hover {
+                    .stream-item:hover:not(.expanded) .oembed-item:hover,
+                    #find-someone input:focus {
 						border-color:/*LIGHTERBORDERCOLORSTART*/rgb(155,206,224)/*LIGHTERBORDERCOLOREND*/;
 						}
 					span.inline-reply-caret .caret-inner {

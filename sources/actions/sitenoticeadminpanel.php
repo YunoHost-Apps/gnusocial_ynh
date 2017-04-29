@@ -110,9 +110,7 @@ class SitenoticeadminpanelAction extends AdminPanelAction
         }
 
         // scrub HTML input
-        require_once INSTALLDIR.'/extlib/HTMLPurifier/HTMLPurifier.auto.php';
-        $purifier = new HTMLPurifier();
-        $siteNotice = $purifier->purify($siteNotice);
+        $siteNotice = common_purify($siteNotice);
     }
 }
 

@@ -31,6 +31,8 @@ class SalmonAction extends Action
     protected $oprofile = null; // Ostatus_profile of the actor
     protected $actor    = null; // Profile object of the actor
 
+    var $format   = 'text'; // error messages will be printed in plaintext
+
     var $xml      = null;
     var $activity = null;
     var $target   = null;
@@ -43,7 +45,7 @@ class SalmonAction extends Action
 
         if (!isset($_SERVER['CONTENT_TYPE'])) {
             // TRANS: Client error. Do not translate "Content-type"
-            $this->clientError(_m('Salmon requires a Content-type header.'));
+            throw new ClientException(_m('Salmon requires a Content-type header.'));
         }
         $envxml = null;
         switch ($_SERVER['CONTENT_TYPE']) {
@@ -82,6 +84,8 @@ class SalmonAction extends Action
 
         // Cryptographic verification test, throws exception on failure
         $magic_env->verify($this->actor);
+
+        common_debug('Salmon slap is carrying activity URI=='._ve($this->activity->id));
 
         return true;
     }

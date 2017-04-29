@@ -315,9 +315,13 @@ class XmppPlugin extends ImPlugin
 
     function sendNotice($screenname, Notice $notice)
     {
-        $msg   = $this->formatNotice($notice);
-        $entry = $this->format_entry($notice);
-
+        try {
+            $msg   = $this->formatNotice($notice);
+            $entry = $this->format_entry($notice);
+        } catch (Exception $e) {
+            common_log(LOG_ERR, __METHOD__ . ": Discarding outgoing stanza because of exception: {$e->getMessage()}");
+            return false;   // return value of sendNotice is never actually used as of now
+        }
         $this->queuedConnection()->message($screenname, $msg, 'chat', null, $entry);
         return true;
     }
@@ -461,7 +465,7 @@ class XmppPlugin extends ImPlugin
         $versions[] = array('name' => 'XMPP',
                             'version' => GNUSOCIAL_VERSION,
                             'author' => 'Craig Andrews, Evan Prodromou',
-                            'homepage' => 'http://status.net/wiki/Plugin:XMPP',
+                            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/XMPP',
                             'rawdescription' =>
                             // TRANS: Plugin description.
                             _m('The XMPP plugin allows users to send and receive notices over the XMPP/Jabber network.'));

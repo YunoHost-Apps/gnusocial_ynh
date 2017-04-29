@@ -37,12 +37,12 @@ abstract class WebFingerResource
         // (because remote sites look for it) verify that they are still
         // the same identity as they were on HTTP. Should NOT be used if
         // you've run HTTPS all the time!
-        if (common_config('webfinger', 'http_alias')) {
+        if (common_config('fix', 'legacy_http')) {
             foreach ($aliases as $alias=>$id) {
                 if (!strtolower(parse_url($alias, PHP_URL_SCHEME)) === 'https') {
                     continue;
                 }
-                $aliases[preg_replace('/^https:/', 'http:', $alias, 1)] = $id;
+                $aliases[preg_replace('/^https:/i', 'http:', $alias, 1)] = $id;
             }
         }
 

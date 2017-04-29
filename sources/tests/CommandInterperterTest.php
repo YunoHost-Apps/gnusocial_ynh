@@ -21,10 +21,7 @@ class CommandInterpreterTest extends PHPUnit_Framework_TestCase
     {
         $inter = new CommandInterpreter();
 
-        $user = new User(); // fake user
-        $user->limit(1);
-        $user->find();
-        $cmd = $inter->handle_command($user, $input);
+        $cmd = $inter->handle_command(null, $input);
 
         $type = $cmd ? get_class($cmd) : null;
         $this->assertEquals(strtolower($expectedType), strtolower($type), $comment);
@@ -149,21 +146,21 @@ class CommandInterpreterTest extends PHPUnit_Framework_TestCase
             array('invite foo bar', null),
 
             array('track', null),
-            array('track foo', 'TrackCommand'),
-            array('track off', 'TrackOffCommand'),
+            array('track foo', 'SearchSubTrackCommand'),
+            array('track off', 'SearchSubTrackOffCommand'),
             array('track foo bar', null),
             array('track off foo', null),
 
             array('untrack', null),
-            array('untrack foo', 'UntrackCommand'),
-            array('untrack all', 'TrackOffCommand'),
+            array('untrack foo', 'SearchSubUntrackCommand'),
+            array('untrack all', 'SearchSubTrackOffCommand'),
             array('untrack foo bar', null),
             array('untrack all foo', null),
 
-            array('tracking', 'TrackingCommand'),
+            array('tracking', 'SearchSubTrackingCommand'),
             array('tracking foo', null),
 
-            array('tracks', 'TrackingCommand'),
+            array('tracks', 'SearchSubTrackingCommand'),
             array('tracks foo', null),
 
         );

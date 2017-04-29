@@ -34,18 +34,14 @@ if (!defined('GNUSOCIAL')) { exit(1); }
 
 class MediaFile
 {
-    protected $scoped   = null;
-
     var $filename      = null;
     var $fileRecord    = null;
     var $fileurl       = null;
     var $short_fileurl = null;
     var $mimetype      = null;
 
-    function __construct(Profile $scoped, $filename = null, $mimetype = null, $filehash = null)
+    function __construct($filename = null, $mimetype = null, $filehash = null)
     {
-        $this->scoped = $scoped;
-
         $this->filename   = $filename;
         $this->mimetype   = $mimetype;
         $this->filehash   = $filehash;
@@ -189,10 +185,6 @@ class MediaFile
 
     static function fromUpload($param='media', Profile $scoped=null)
     {
-        if (is_null($scoped)) {
-            $scoped = Profile::current();
-        }
-
         // The existence of the "error" element means PHP has processed it properly even if it was ok.
         if (!isset($_FILES[$param]) || !isset($_FILES[$param]['error'])) {
             throw new NoUploadedMediaException($param);
@@ -242,27 +234,35 @@ class MediaFile
         try {
             $file = File::getByHash($filehash);
             // If no exception is thrown the file exists locally, so we'll use that and just add redirections.
-            $filename = $file->filename;
+            // but if the _actual_ locally stored file doesn't exist, getPath will throw FileNotFoundException
+            $filename = basename($file->getPath());
+            $mimetype = $file->mimetype;
+
+        } catch (FileNotFoundException $e) {
+            // The file does not exist in our local filesystem, so store this upload.
+
+            if (!move_uploaded_file($_FILES[$param]['tmp_name'], $e->path)) {
+                // TRANS: Client exception thrown when a file upload operation fails because the file could
+                // TRANS: not be moved from the temporary folder to the permanent file location.
+                throw new ClientException(_('File could not be moved to destination directory.'));
+            }
+
+            $filename = basename($file->getPath());
             $mimetype = $file->mimetype;
 
         } catch (NoResultException $e) {
             // We have to save the upload as a new local file. This is the normal course of action.
 
-            // Throws exception if additional size does not respect quota
-            // This test is only needed, of course, if we're uploading something new.
-            File::respectsQuota($scoped, $_FILES[$param]['size']);
+            if ($scoped instanceof Profile) {
+                // Throws exception if additional size does not respect quota
+                // This test is only needed, of course, if we're uploading something new.
+                File::respectsQuota($scoped, $_FILES[$param]['size']);
+            }
 
             $mimetype = self::getUploadedMimeType($_FILES[$param]['tmp_name'], $_FILES[$param]['name']);
+            $basename = basename($_FILES[$param]['name']);
 
-            switch (common_config('attachments', 'filename_base')) {
-            case 'upload':
-                $basename = basename($_FILES[$param]['name']);
-                $filename = File::filename($scoped, $basename, $mimetype);
-                break;
-            case 'hash':
-            default:
-                $filename = strtolower($filehash) . '.' . File::guessMimeExtension($mimetype); 
-            }
+            $filename = strtolower($filehash) . '.' . File::guessMimeExtension($mimetype, $basename);
             $filepath = File::path($filename);
 
             $result = move_uploaded_file($_FILES[$param]['tmp_name'], $filepath);
@@ -274,10 +274,10 @@ class MediaFile
             }
         }
 
-        return new MediaFile($scoped, $filename, $mimetype, $filehash);
+        return new MediaFile($filename, $mimetype, $filehash);
     }
 
-    static function fromFilehandle($fh, Profile $scoped) {
+    static function fromFilehandle($fh, Profile $scoped=null) {
         $stream = stream_get_meta_data($fh);
         // So far we're only handling filehandles originating from tmpfile(),
         // so we can always do hash_file on $stream['uri'] as far as I can tell!
@@ -286,34 +286,52 @@ class MediaFile
         try {
             $file = File::getByHash($filehash);
             // Already have it, so let's reuse the locally stored File
-            $filename = $file->filename;
+            // by using getPath we also check whether the file exists
+            // and throw a FileNotFoundException with the path if it doesn't.
+            $filename = basename($file->getPath());
             $mimetype = $file->mimetype;
+        } catch (FileNotFoundException $e) {
+            // This happens if the file we have uploaded has disappeared
+            // from the local filesystem for some reason. Since we got the
+            // File object from a sha256 check in fromFilehandle, it's safe
+            // to just copy the uploaded data to disk!
+
+            fseek($fh, 0);  // just to be sure, go to the beginning
+            // dump the contents of our filehandle to the path from our exception
+            // and report error if it failed.
+            if (false === file_put_contents($e->path, fread($fh, filesize($stream['uri'])))) {
+                // TRANS: Client exception thrown when a file upload operation fails because the file could
+                // TRANS: not be moved from the temporary folder to the permanent file location.
+                throw new ClientException(_('File could not be moved to destination directory.'));
+            }
+            if (!chmod($e->path, 0664)) {
+                common_log(LOG_ERR, 'Could not chmod uploaded file: '._ve($e->path));
+            }
+
+            $filename = basename($file->getPath());
+            $mimetype = $file->mimetype;
+
         } catch (NoResultException $e) {
-            File::respectsQuota($scoped, filesize($stream['uri']));
+            if ($scoped instanceof Profile) {
+                File::respectsQuota($scoped, filesize($stream['uri']));
+            }
 
             $mimetype = self::getUploadedMimeType($stream['uri']);
 
-            switch (common_config('attachments', 'filename_base')) {
-            case 'upload':
-                $filename = File::filename($scoped, "email", $mimetype);
-                break;
-            case 'hash':
-            default:
-                $filename = strtolower($filehash) . '.' . File::guessMimeExtension($mimetype);
-            }
+            $filename = strtolower($filehash) . '.' . File::guessMimeExtension($mimetype);
             $filepath = File::path($filename);
 
             $result = copy($stream['uri'], $filepath) && chmod($filepath, 0664);
 
             if (!$result) {
+                common_log(LOG_ERR, 'File could not be moved (or chmodded) from '._ve($stream['uri']) . ' to ' . _ve($filepath));
                 // TRANS: Client exception thrown when a file upload operation fails because the file could
                 // TRANS: not be moved from the temporary folder to the permanent file location.
-                throw new ClientException(_('File could not be moved to destination directory.' .
-                    $stream['uri'] . ' ' . $filepath));
+                throw new ClientException(_('File could not be moved to destination directory.' ));
             }
         }
 
-        return new MediaFile($scoped, $filename, $mimetype, $filehash);
+        return new MediaFile($filename, $mimetype, $filehash);
     }
 
     /**
@@ -337,6 +355,7 @@ class MediaFile
         $unclearTypes = array('application/octet-stream',
                               'application/vnd.ms-office',
                               'application/zip',
+                              'text/plain',
                               'text/html',  // Ironically, Wikimedia Commons' SVG_logo.svg is identified as text/html
                               // TODO: for XML we could do better content-based sniffing too
                               'text/xml');
@@ -346,10 +365,12 @@ class MediaFile
         // If we didn't match, or it is an unclear match
         if ($originalFilename && (!$mimetype || in_array($mimetype, $unclearTypes))) {
             try {
-                $type = common_supported_ext_to_mime($originalFilename);
+                $type = common_supported_filename_to_mime($originalFilename);
                 return $type;
+            } catch (UnknownExtensionMimeException $e) {
+                // FIXME: I think we should keep the file extension here (supported should be === true here)
             } catch (Exception $e) {
-                // Extension not found, so $mimetype is our best guess
+                // Extension parsed but no connected mimetype, so $mimetype is our best guess
             }
         }
 

@@ -32,7 +32,7 @@ class MediaFileTest extends PHPUnit_Framework_TestCase
     public function testMimeType($filename, $expectedType)
     {
         if (!file_exists($filename)) {
-            throw new Exception("WTF? $filename test file missing");
+            throw new Exception("Test file $filename missing");
         }
 
         $type = MediaFile::getUploadedMimeType($filename, basename($filename));
@@ -76,14 +76,14 @@ class MediaFileTest extends PHPUnit_Framework_TestCase
             
             "spreadsheet.ods" => "application/vnd.oasis.opendocument.spreadsheet",
             "spreadsheet.ots" => "application/vnd.oasis.opendocument.spreadsheet-template",
-            "spreadsheet.xls" => "application/vnd.ms-excel",
-            "spreadsheet.xlt" => "application/vnd.ms-excel",
-            "spreadsheet.xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "spreadsheet.xls" => "application/vnd.ms-office", //"application/vnd.ms-excel",
+            "spreadsheet.xlt" => "application/vnd.ms-office", //"application/vnd.ms-excel",
+            "spreadsheet.xlsx" => "application/octet-stream", //"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             
             "presentation.odp" => "application/vnd.oasis.opendocument.presentation",
             "presentation.otp" => "application/vnd.oasis.opendocument.presentation-template",
             "presentation.ppt" => "application/vnd.ms-powerpoint",
-            "presentation.pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "presentation.pptx" => 'application/zip', //"application/vnd.openxmlformats-officedocument.presentationml.presentation",
         );
 
         $dataset = array();

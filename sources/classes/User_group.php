@@ -105,6 +105,11 @@ class User_group extends Managed_DataObject
         return $this->getProfile()->getNickname();
     }
 
+    public function getFullname()
+    {
+        return $this->getProfile()->getFullname();
+    }
+
     public static function defaultLogo($size)
     {
         static $sizenames = array(AVATAR_PROFILE_SIZE => 'profile',
@@ -148,7 +153,9 @@ class User_group extends Managed_DataObject
 
     function getNotices($offset, $limit, $since_id=null, $max_id=null)
     {
-        $stream = new GroupNoticeStream($this);
+        // FIXME: Get the Profile::current() some other way, to avoid
+        // possible confusion between current session and queue process.
+        $stream = new GroupNoticeStream($this, Profile::current());
 
         return $stream->getNotices($offset, $limit, $since_id, $max_id);
     }

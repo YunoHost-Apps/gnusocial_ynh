@@ -49,7 +49,7 @@ class ApiOAuthRequestTokenAction extends ApiOAuthAction
      *
      * @return boolean success flag
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
 
@@ -69,9 +69,9 @@ class ApiOAuthRequestTokenAction extends ApiOAuthAction
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         $datastore   = new ApiGNUsocialOAuthDataStore();
         $server      = new OAuthServer($datastore);

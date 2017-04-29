@@ -50,7 +50,7 @@ class CancelgroupAction extends Action
     /**
      * Prepare to run
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
 
@@ -127,9 +127,9 @@ class CancelgroupAction extends Action
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         try {
             $this->request->abort();

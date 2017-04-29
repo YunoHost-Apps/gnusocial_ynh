@@ -50,9 +50,14 @@ checkLocalStorage();
 window.loggedIn = iterateRecursiveReplaceHtmlSpecialChars(window.loggedIn);
 
 // hack to supress basic auth popup, e.g. if the user has to tabs open and
-// log out in one of them. but microsoft browsers doesn't support this
-if(typeof bowser.msie == 'undefined' && typeof bowser.msedge == 'undefined') {
-	window.apiRoot = window.apiRoot.replace('://','://x:x@');
+// log out in one of them. but microsoft browsers and chrome 59+ doesn't support this
+if(typeof bowser != 'undefined') {
+	var bowserIntVersion = parseInt(bowser.version,10);
+	if(typeof bowser.msie == 'undefined'
+	&& typeof bowser.msedge == 'undefined'
+	&& !(typeof bowser.chrome != 'undefined' && bowser.chrome === true && bowserIntVersion <= 59)) {
+		window.apiRoot = window.apiRoot.replace('://','://x:x@');
+		}
 	}
 
 
@@ -222,8 +227,8 @@ window.userArrayLastRetrieved = new Object();
 $('body').on('mouseover',function (e) {
 
 	// no hovercards on these elements
-	if($(e.target).is('#user-queets') || $(e.target).closest('a').is('#user-queets')
-	|| $(e.target).is('.tweet-stats') || $(e.target).closest('a').is('.tweet-stats')) {
+	if($(e.target).is('#user-queets') || $(e.target).closest('a').is('#user-queets')
+	|| $(e.target).is('.tweet-stats') || $(e.target).closest('a').is('.tweet-stats')) {
 		return true;
 		}
 
@@ -280,7 +285,6 @@ $('body').on('mouseover',function (e) {
 			possibleNickname = $(e.target).text();
 			}
 		}
-
 	// see if we have it in cache, otherwise query server
 	getUserArrayData(hrefAttr, possibleNickname, timeNow, targetElement, function(userArray, timeOut){
 
@@ -321,11 +325,10 @@ $('body').on('mouseover',function (e) {
 
 					// if the user array has not been retrieved from the server for the last 60 seconds,
 					// we query it for the lastest data
-					if((typeof window.userArrayLastRetrieved[hrefAttr] == 'undefined') || (timeNow - window.userArrayLastRetrieved[hrefAttr]) > 60000) {
+					if((typeof window.userArrayLastRetrieved[hrefAttr] == 'undefined') || (timeNow - window.userArrayLastRetrieved[hrefAttr]) > 60000) {
 						window.userArrayLastRetrieved[hrefAttr] = timeNow;
-
 						// local users
-						if(userArray.local !== null && userArray.local.is_local === true) {
+						if(userArray.local && userArray.local.is_local === true) {
 							getFromAPI('users/show.json?id=' + userArray.local.screen_name, function(data){
 								if(data) {
 									var newProfileCard = buildProfileCard(data);
@@ -336,7 +339,7 @@ $('body').on('mouseover',function (e) {
 							}
 
 						// external users
-						else if(userArray.local === null || userArray.local.is_local === false) {
+						else if(!userArray.local || userArray.local.is_local === false) {
 							getFromAPI('qvitter/external_user_show.json?profileurl=' + encodeURIComponent(hrefAttr),function(data){
 								if(data && data.external !== null) {
 									var newProfileCard = buildExternalProfileCard(data);
@@ -380,10 +383,10 @@ function getUserArrayData(maybeProfileUrl,maybeNickname,timeNow,targetElement,ca
 				setTimeout(function(){
 					if(targetElement.is(":hover")) {
 						// don't try this if we already tried it less than a minute ago
-						if((typeof window.userArrayLastRetrieved[maybeProfileUrl] == 'undefined') || (timeNow - window.userArrayLastRetrieved[maybeProfileUrl]) > 60000) {
+						if((typeof window.userArrayLastRetrieved[maybeProfileUrl] == 'undefined') || (timeNow - window.userArrayLastRetrieved[maybeProfileUrl]) > 60000) {
 							window.userArrayLastRetrieved[maybeProfileUrl] = timeNow;
 							getFromAPI('qvitter/external_user_show.json?profileurl=' + encodeURIComponent(maybeProfileUrl),function(data){
-								if(data && data.external !== null) {
+								if(data) {
 
 									// we want hover cards to appear _at least_ 600ms after hover (see below)
 									var timeAfterServerQuery = new Date().getTime();
@@ -406,11 +409,11 @@ function getUserArrayData(maybeProfileUrl,maybeNickname,timeNow,targetElement,ca
 			else if(streamObject && (streamObject.name == 'profile' || streamObject.name == 'profile by id')) {
 
 				var nicknameOrId = streamObject.nickname;
-				if(!nicknameOrId) {
+				if(!nicknameOrId) {
 					nicknameOrId = streamObject.id;
 					}
 				// don't query too often for the same user
-				if(typeof window.userArrayLastRetrieved[maybeProfileUrl] == 'undefined' || (timeNow - window.userArrayLastRetrieved[maybeProfileUrl]) > 60000) {
+				if(typeof window.userArrayLastRetrieved[maybeProfileUrl] == 'undefined' || (timeNow - window.userArrayLastRetrieved[maybeProfileUrl]) > 60000) {
 					window.userArrayLastRetrieved[maybeProfileUrl] = timeNow;
 					// query server and cache user data (done automatically in getFromAPI)
 					getFromAPI('users/show.json?id=' + nicknameOrId, function(data){
@@ -480,6 +483,105 @@ $('body').on('mouseleave','.hover-card', function(e) {
 	$(this).removeClass('dont-remove-card');
 	});
 
+
+/* ·
+   ·
+   ·   find someone tool
+   ·
+   · · · · · · · · · · · · · */
+
+$('#find-someone input').keyup(function(e){
+	var thisFindSomeoneInput = $(this);
+	if(e.keyCode==13 && !thisFindSomeoneInput.hasClass('submitted')) {
+		thisFindSomeoneInput.addClass('submitted');
+		thisFindSomeoneInput.attr('disabled','disabled');
+		var val = $.trim(thisFindSomeoneInput.val());
+
+		// if this is a simple text input, we assume it is a local user
+		if(val.length>1 && /^(@)?[a-zA-Z0-9]+$/.test(val)) {
+			if(val.indexOf('@') == 0) {
+				val = val.replace('@','');
+				}
+			setNewCurrentStream(pathToStreamRouter(val),true,false,function(){
+				foundSomeone(thisFindSomeoneInput);
+				});
+			}
+		// urls might be a remote user
+		else if(val.length==0 || /^(ftp|http|https):\/\/[^ "]+$/.test(val)) {
+			getFromAPI('qvitter/external_user_show.json?profileurl=' + encodeURIComponent(val),function(data){
+				if(data && data.local !== null) {
+					setNewCurrentStream(pathToStreamRouter('user/' + data.local.id),true,false,function(){
+						foundSomeone(thisFindSomeoneInput);
+						});
+					}
+				else {
+					cantFindSomeone(thisFindSomeoneInput);
+					}
+				});
+			}
+		// @user@instance.domain style syntax
+		else if(val.length==0 || /^(@)?[a-zA-Z0-9]+@[a-zA-Z0-9\-]+(\.)(.*)+$/.test(val)) {
+
+			if(val.indexOf('@') == 0) {
+				val = val.substring(1)
+			}
+
+			var username = val.substring(0, val.indexOf('@'));
+			var domain = val.substring(val.indexOf('@')+1);
+			var urlToTry = 'https://' + domain + '/' + username;
+			var secondUrlToTry = 'http://' + domain + '/' + username;
+			var thirdUrlToTry = 'https://' + domain + '/@' + username; // mastodon
+
+			getFromAPI('qvitter/external_user_show.json?profileurl=' + encodeURIComponent(urlToTry),function(data){
+				if(data && data.local !== null) {
+					setNewCurrentStream(pathToStreamRouter('user/' + data.local.id),true,false,function(){
+						foundSomeone(thisFindSomeoneInput);
+						});
+					}
+				else {
+					getFromAPI('qvitter/external_user_show.json?profileurl=' + encodeURIComponent(secondUrlToTry),function(data){
+						if(data && data.local !== null) {
+							setNewCurrentStream(pathToStreamRouter('user/' + data.local.id),true,false,function(){
+								foundSomeone(thisFindSomeoneInput);
+								});
+							}
+						else {
+							getFromAPI('qvitter/external_user_show.json?profileurl=' + encodeURIComponent(thirdUrlToTry),function(data){
+								if(data && data.local !== null) {
+									setNewCurrentStream(pathToStreamRouter('user/' + data.local.id),true,false,function(){
+										foundSomeone(thisFindSomeoneInput);
+										});
+									}
+								else {
+									cantFindSomeone(thisFindSomeoneInput);
+									}
+								});
+							}
+						});
+					}
+				});
+			}
+		else {
+			cantFindSomeone(thisFindSomeoneInput);
+			}
+		}
+	});
+
+function cantFindSomeone(thisFindSomeoneInput) {
+	thisFindSomeoneInput.css('background-color','pink');
+	thisFindSomeoneInput.effect('shake',{distance:5,times:3,duration:700},function(){
+		thisFindSomeoneInput.animate({backgroundColor:'#fff'},1000);
+		thisFindSomeoneInput.removeAttr('disabled');
+		thisFindSomeoneInput.removeClass('submitted');
+		thisFindSomeoneInput.focus();
+		});
+	}
+function foundSomeone(thisFindSomeoneInput) {
+	thisFindSomeoneInput.removeAttr('disabled');
+	thisFindSomeoneInput.val('');
+	thisFindSomeoneInput.blur();
+	thisFindSomeoneInput.removeClass('submitted');
+	}
 
 
 
@@ -627,16 +729,18 @@ if(!window.registrationsClosed) {
 				});
 
 
-			// validate on keyup
-			$('#popup-register input').on('keyup',function(){
-				if(validateRegisterForm($('#popup-register'))
-				&& !$('#signup-user-nickname-step2').hasClass('nickname-taken')
-				&& !$('#signup-user-email-step2').hasClass('email-in-use')) {
-					$('#signup-btn-step2').removeClass('disabled');
-					}
-				else {
-					$('#signup-btn-step2').addClass('disabled');
-					}
+			// validate on keyup / paste / blur
+			$('#popup-register input').on('keyup paste blur',function(){
+				setTimeout(function () { // defer validation as after paste the content is not immediately available
+					if(validateRegisterForm($('#popup-register'))
+					&& !$('#signup-user-nickname-step2').hasClass('nickname-taken')
+					&& !$('#signup-user-email-step2').hasClass('email-in-use')) {
+						$('#signup-btn-step2').removeClass('disabled');
+						}
+					else {
+						$('#signup-btn-step2').addClass('disabled');
+						}
+				}, 0);
 				});
 			$('#popup-register input').trigger('keyup');
 
@@ -747,6 +851,11 @@ $(window).load(function() {
 
 	// set language, from local storage, else browser language
 	var browserLang = navigator.language || navigator.userLanguage;
+
+	// use english if browser has no language set
+	if(typeof browserLang == 'undefined') {
+		var browserLang = 'en-GB';
+		}
 
 	// browsers report e.g. sv-SE but we want it in the format "sv" or "sv_se"
 	browserLang = browserLang.replace('-','_').toLowerCase();
@@ -952,12 +1061,15 @@ function proceedToSetLanguageAndLogin(data){
 	$('#accessibility-toggle-link').html(window.sL.accessibilityToggleLink);
 	$('#settingslink .nav-session').attr('data-tooltip',window.sL.profileAndSettings);
 	$('#top-compose').attr('data-tooltip',window.sL.compose);
-	$('button.upload-image').attr('data-tooltip',window.sL.tooltipAttachImage);
+	$('button.upload-image').attr('data-tooltip',window.sL.tooltipAttachFile);
 	$('button.shorten').attr('data-tooltip',window.sL.tooltipShortenUrls);
 	$('.reload-stream').attr('data-tooltip',window.sL.tooltipReloadStream);
 	$('#clear-history').html(window.sL.clearHistory);
 	$('#user-screen-name, #user-avatar, #user-name').attr('data-tooltip', window.sL.viewMyProfilePage);
 	$('#top-menu-profile-link-view-profile').html(window.sL.viewMyProfilePage);
+	$('#find-someone input').attr('placeholder',window.sL.findSomeone);
+	$('#find-someone input').attr('data-tooltip',window.sL.findSomeoneTooltip);
+
 
 	// show site body now
 	$('#user-container').css('display','block');
@@ -981,7 +1093,7 @@ function proceedToSetLanguageAndLogin(data){
 function proceedLoggedOut() {
 	display_spinner();
 	setNewCurrentStream(getStreamFromUrl(),true,false,function(){
-		$('input#nickname').focus();
+		// $('input#nickname').focus(); --> maybe not a good idea on mobile?
 		$('#page-container').css('opacity','1');
 		});
 	}
@@ -1400,7 +1512,7 @@ $('body').on('click',function(e){
 
 /* ·
    ·
-   ·   When clicking a function row in a stream menu – invoke the function
+   ·   When clicking a function row in a stream menu – invoke the function
    ·
    · · · · · · · · · · · · · */
 
@@ -1829,42 +1941,34 @@ $('body').on('click','a', function(e) {
 		}
 	// hijack link if we find a matching link that qvitter can handle
 	else {
-		var streamObject = URLtoStreamRouter($(this).attr('href'));
+
+		var hrefAttr = $(this).attr('href');
+
+		// this might be a remote profile that we want to reroute to a local instance/user/id url, let's check our cache
+		if(typeof window.convertStatusnetProfileUrlToUserArrayCacheKey[hrefAttr] != 'undefined') {
+			if(typeof window.userArrayCache[window.convertStatusnetProfileUrlToUserArrayCacheKey[hrefAttr]] != 'undefined') {
+				var cachedUserArray = window.userArrayCache[window.convertStatusnetProfileUrlToUserArrayCacheKey[hrefAttr]];
+				if(cachedUserArray.local.is_local === false) {
+					hrefAttr = window.siteInstanceURL + 'user/' + cachedUserArray.local.id;
+					}
+				}
+			}
+		else if(typeof window.convertUriToUserArrayCacheKey[hrefAttr] != 'undefined') {
+			if(typeof window.userArrayCache[window.convertUriToUserArrayCacheKey[hrefAttr]] != 'undefined') {
+				var cachedUserArray = window.userArrayCache[window.convertUriToUserArrayCacheKey[hrefAttr]];
+				if(cachedUserArray.local.is_local === false) {
+					hrefAttr = window.siteInstanceURL + 'user/' + cachedUserArray.local.id;
+					}
+				}
+			}
+
+		var streamObject = URLtoStreamRouter(hrefAttr);
 		if(streamObject && streamObject.stream) {
 			e.preventDefault();
 
-			// if this is a user/{id} type link we want to find the nickname before setting a new stream
-			// the main reason is that we want to update the browsers location bar and the .stream-selecton
-			// links as fast as we can. we rather not wait for the server response
-			if(streamObject.name == 'profile by id') {
-
-				// pathToStreamRouter() might have found a cached nickname
-				if(streamObject.nickname) {
-					setNewCurrentStream(pathToStreamRouter(streamObject.nickname),true,streamObject.id);
-					}
-				// otherwise we might follow the user and thereby already know its nickname
-				else if (typeof window.following != 'undefined' && typeof window.following[streamObject.id] != 'undefined') {
-					setNewCurrentStream(pathToStreamRouter(window.following[streamObject.id].username),true,streamObject.id);
-					}
-				// if the text() of the clicked element looks like a user nickname, use that (but send id to setNewCurrentStream() in case this is bad data)
-				else if(/^@[a-zA-Z0-9]+$/.test($(e.target).text()) || /^[a-zA-Z0-9]+$/.test($(e.target).text())) {
-					var nickname = $(e.target).text();
-					if(nickname.indexOf('@') == 0) {
-						nickname = nickname.substring(1); // remove any starting @
-						}
-					setNewCurrentStream(pathToStreamRouter(nickname),true,streamObject.id);
-					}
-				// if we can't figure out or guess a nickname, query the server for it
-				else {
-					getNicknameByUserIdFromAPI(streamObject.id,function(nickname) {
-						if(nickname) {
-							setNewCurrentStream(pathToStreamRouter(nickname),true,false);
-							}
-						else {
-							alert('user not found');
-							}
-						});
-					}
+			// if this is a user/{id} type link but we know the nickname already
+			if(streamObject.name == 'profile by id' && streamObject.nickname !== false) {
+				setNewCurrentStream(pathToStreamRouter(streamObject.nickname),true,streamObject.id);
 				}
 			// same with group/{id}/id links
 			else if(streamObject.name == 'group notice stream by id') {
@@ -1873,7 +1977,7 @@ $('body').on('click','a', function(e) {
 					setNewCurrentStream(pathToStreamRouter('group/' + window.groupMemberships[streamObject.id].username),true,streamObject.id);
 					}
 				// if the text() of the clicked element looks like a group nickname, use that (but send id to setNewCurrentStream() in case this is bad data)
-				else if(/^![a-zA-Z0-9]+$/.test($(e.target).text()) || /^[a-zA-Z0-9]+$/.test($(e.target).text())) {
+				else if(/^![a-zA-Z0-9]+$/.test($(e.target).text()) || /^[a-zA-Z0-9]+$/.test($(e.target).text())) {
 					var nickname = $(e.target).text();
 					if(nickname.indexOf('!') == 0) {
 						nickname = nickname.substring(1); // remove any starting !
@@ -2049,13 +2153,12 @@ function checkForNewQueets() {
 		$('body').addClass('loading-newer');
 
 		// only if logged in and only for notice or notification streams
-		if(window.loggedIn && (window.currentStreamObject.type == 'notices' || window.currentStreamObject.type == 'notifications')) {
+		if(window.loggedIn && (window.currentStreamObject.type == 'notices' || window.currentStreamObject.type == 'notifications')) {
 			var lastId = $('#feed-body').children('.stream-item').not('.temp-post').not('.posted-from-form').attr('data-quitter-id-in-stream');
 			var addThisStream = window.currentStreamObject.stream;
-			var timeNow = new Date().getTime();
 			getFromAPI(addThisStream + qOrAmp(window.currentStreamObject.stream) + 'since_id=' + lastId,function(data){
+				$('body').removeClass('loading-newer');
 				if(data) {
-					$('body').removeClass('loading-newer');
 					if(addThisStream == window.currentStreamObject.stream) {
 						addToFeed(data, false, 'hidden');
 
@@ -2074,7 +2177,6 @@ function checkForNewQueets() {
 			}
 		}
 	}
-
 
 /* ·
    ·
@@ -2179,23 +2281,18 @@ $('body').on('click','.stream-item .queet img.attachment-thumb',function (event)
 		$thumbToDisplay = $queetThumbsClone.find('img.attachment-thumb[src="' + thisAttachmentThumbSrc + '"]');
 		$thumbToDisplay.parent().addClass('display-this-thumb');
 
-		// "play" all animated gifs and add youtube iframes to all youtube videos
+		// "play" all animated gifs and add youtube iframes to all youtube and vimeo videos
 		$.each($queetThumbsClone.find('img.attachment-thumb'),function(){
 			if($(this).attr('data-mime-type') == 'image/gif'
 			&& $(this).parent().hasClass('play-button')) {
 				$(this).attr('src',$(this).attr('data-full-image-url'));
 				$(this).parent('.thumb-container').css('background-image','url(\'' + $(this).attr('data-full-image-url') + '\')');
 				}
-			else if($(this).parent().hasClass('youtube')){
-
-				// autoplay a clicked video
-				var autoplayFlag = '';
-				if($(this).parent().hasClass('display-this-thumb')) {
-					autoplayFlag = '&autoplay=1';
-					}
-
-				var youtubeId = $(this).attr('data-full-image-url').replace('http://www.youtube.com/watch?v=','').replace('https://www.youtube.com/watch?v=','').replace('http://youtu.be/','').replace('https://youtu.be/','').substr(0,11);
-				$(this).parent().prepend('<iframe width="510" height="315" src="//www.youtube.com/embed/' + youtubeId + '?enablejsapi=1&version=3&playerapiid=ytplayer' + autoplayFlag + '" frameborder="0" allowscriptaccess="always" allowfullscreen></iframe>');
+			else if($(this).parent().hasClass('host-youtube-com')){
+				$(this).parent().prepend('<iframe width="510" height="315" src="' + youTubeEmbedLinkFromURL($(this).attr('data-full-image-url'), $(this).parent().hasClass('display-this-thumb')) + '" frameborder="0" allowscriptaccess="always" allowfullscreen></iframe>');
+				}
+			else if($(this).parent().hasClass('host-vimeo-com')){
+				$(this).parent().prepend('<iframe src="' + vimeoEmbedLinkFromURL($(this).attr('data-full-image-url'), $(this).parent().hasClass('display-this-thumb')) + '" width="510" height="315" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>');
 				}
 			});
 
@@ -2208,7 +2305,7 @@ $('body').on('click','.stream-item .queet img.attachment-thumb',function (event)
 
 		if(parentStreamItem.hasClass('expanded')) {
 
-			var calculatedDimensions = calculatePopUpAndImageDimensions($thumbToDisplay.attr('src'));
+			var calculatedDimensions = calculatePopUpAndImageDimensions($thumbToDisplay);
 			var $thisImgInQueetThumbsClone = $queetThumbsClone.find('img[src="' + $thumbToDisplay.attr('src') + '"]');
 
 			// set dimensions
@@ -2220,12 +2317,22 @@ $('body').on('click','.stream-item .queet img.attachment-thumb',function (event)
 			// open popup
 			popUpAction('queet-thumb-popup', '', '' + $queetThumbsClone.outerHTML() + '', parentStreamItemHTMLWithoutFooter, calculatedDimensions.popUpWidth);
 			disableOrEnableNavigationButtonsInImagePopup($('#queet-thumb-popup'));
+
+			// for some reason vimeo autoplays when we have a #t=x start time, so stop any vimeo videos running in the background (delay so it has time to load)
+			setTimeout(function(){
+				$.each($('#queet-thumb-popup').find('.thumb-container.host-vimeo-com:not(.display-this-thumb)').children('iframe'),function(){
+					console.log($(this).attr('src'));
+					this.contentWindow.postMessage('{"method": "pause"}', '*');
+					});
+				},1000);
 			}
 		}
 	});
 
 // popups can be max 900px wide, and should not be higher than the window, so we need to do some calculating
-function calculatePopUpAndImageDimensions(img_src) {
+function calculatePopUpAndImageDimensions(img) {
+
+		var img_src = img.attr('src');
 
 		// trick to get width and height, we can't go with what gnusocial tells us, because
 		// gnusocial doesn't (always?) report width and height after proper orientation
@@ -2285,7 +2392,14 @@ function calculatePopUpAndImageDimensions(img_src) {
 				var popUpWidth = 900;
 				}
 			}
-	return {popUpWidth: popUpWidth, displayImgWidth: displayImgWidth};
+
+	// vimeo can't be too small, or the design freaks out
+	if(img.parent('.thumb-container').hasClass('host-vimeo-com') && displayImgWidth < 540) {
+		displayImgWidth = 540;
+		displayImgHeight = 305;
+		}
+
+	return {popUpWidth: popUpWidth, displayImgWidth: displayImgWidth, displayImgHeight: displayImgHeight };
 	}
 
 // switch to next image when clicking the image in the popup
@@ -2296,15 +2410,23 @@ $('body').on('click','#queet-thumb-popup .attachment-thumb',function (event) {
 	if(nextImage.length>0) {
 
 		// start and stop youtube videos, if any
-		$.each($(this).parent('.youtube').children('iframe'),function(){
+		$.each($(this).parent('.host-youtube-com').children('iframe'),function(){
 			this.contentWindow.postMessage('{"event":"command","func":"' + 'stopVideo' + '","args":""}', '*');
 			});
-		$.each(nextImage.parent('.youtube').children('iframe'),function(){
+		$.each(nextImage.parent('.host-youtube-com').children('iframe'),function(){
 			this.contentWindow.postMessage('{"event":"command","func":"' + 'playVideo' + '","args":""}', '*');
 			});
 
+		// start stop vimeo
+		$.each($(this).parent('.host-vimeo-com').children('iframe'),function(){
+			this.contentWindow.postMessage('{"method": "pause"}', '*');
+			});
+		$.each(nextImage.parent('.host-vimeo-com').children('iframe'),function(){
+			this.contentWindow.postMessage('{"method": "play"}', '*');
+			});
+
 		// set dimensions of next image and the popup
-		var calculatedDimensions = calculatePopUpAndImageDimensions(nextImage.attr('src'));
+		var calculatedDimensions = calculatePopUpAndImageDimensions(nextImage);
 		nextImage.width(calculatedDimensions.displayImgWidth);
 		nextImage.parent('.thumb-container').width(calculatedDimensions.displayImgWidth);
 		nextImage.parent('.thumb-container').children('iframe').attr('width',calculatedDimensions.displayImgWidth);
@@ -2329,15 +2451,23 @@ $('body').on('click','#queet-thumb-popup .prev-thumb',function (event) {
 	if(prevImage.length>0) {
 
 		// start and stop youtube videos, if any
-		$.each($(this).parent().find('.display-this-thumb.youtube').children('iframe'),function(){
+		$.each($(this).parent().find('.display-this-thumb.host-youtube-com').children('iframe'),function(){
 			this.contentWindow.postMessage('{"event":"command","func":"' + 'stopVideo' + '","args":""}', '*');
 			});
-		$.each(prevImage.parent('.youtube').children('iframe'),function(){
+		$.each(prevImage.parent('.host-youtube-com').children('iframe'),function(){
 			this.contentWindow.postMessage('{"event":"command","func":"' + 'playVideo' + '","args":""}', '*');
 			});
 
+		// start stop vimeo
+		$.each($(this).parent().find('.display-this-thumb.host-vimeo-com').children('iframe'),function(){
+			this.contentWindow.postMessage('{"method": "pause"}', '*');
+			});
+		$.each(prevImage.parent('.host-vimeo-com').children('iframe'),function(){
+			this.contentWindow.postMessage('{"method": "play"}', '*');
+			});
+
 		// set dimensions of next image and the popup
-		var calculatedDimensions = calculatePopUpAndImageDimensions(prevImage.attr('src'));
+		var calculatedDimensions = calculatePopUpAndImageDimensions(prevImage);
 		prevImage.width(calculatedDimensions.displayImgWidth);
 		prevImage.parent('.thumb-container').width(calculatedDimensions.displayImgWidth);
 		prevImage.parent('.thumb-container').children('iframe').attr('width',calculatedDimensions.displayImgWidth);
@@ -3445,6 +3575,12 @@ $('body').on('keyup', 'div.queet-box-syntax', function(e) {
 
 // menu
 $('#shortcuts-link').click(function(){
+
+	// not if disabled
+	if($(this).hasClass('disabled')) {
+		return true;
+		}
+
 	popUpAction('popup-shortcuts', window.sL.keyboardShortcuts,'<div id="shortcuts-container"></div>',false);
 	getDoc('shortcuts',function(html){
 		$('#shortcuts-container').html(html);
@@ -3454,6 +3590,12 @@ $('#shortcuts-link').click(function(){
 
 // send queet on ctrl+enter or ⌘+enter (mac)
 $('body').on('keydown','.queet-box-syntax',function (e) {
+
+	// do nothing if shortcuts are disabled
+	if(window.disableKeyboardShortcuts === true) {
+		return true;
+		}
+
 	if((e.ctrlKey && e.which == 13)
 	|| (e.metaKey && e.which == 13)) {
 		e.preventDefault();
@@ -3465,13 +3607,18 @@ $('body').on('keydown','.queet-box-syntax',function (e) {
 
 $('body').keyup(function (e) {
 
+	// do nothing if shortcuts are disabled
+	if(window.disableKeyboardShortcuts === true) {
+		return true;
+		}
+
 	// only if queetbox is blurred, and we're not typing in any input, and we're logged in
 	if($('.queet-box-syntax[contenteditable="true"]').length == 0
 	&& $(":focus").length == 0
 	&& window.loggedIn !== false) {
 
 		// shortcuts documentation on '?'
-		if(e.shiftKey && (e.which == 171 || e.which == 191)) {
+		if(e.shiftKey && (e.which == 171 || e.which == 191)) {
 			$('#shortcuts-link').click();
 			}
 
@@ -3942,16 +4089,8 @@ $('body').on('click','.upload-cover-photo, .upload-avatar, .upload-background-im
 		coverPhotoAndAvatarSelectAndCrop(e, coverOrAvatar);
 		})});
 
-	// trigger click for firefox
-	if(navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-		$('#' + inputId).trigger('click');
-		}
-	// other browsers
-	else {
-		var evt = document.createEvent("HTMLEvents");
-		evt.initEvent("click", true, true);
-		$('#' + inputId)[0].dispatchEvent(evt);
-		}
+	// trigger click
+	triggerClickOnInputFile($('#' + inputId));
 
 	});
 
@@ -4080,16 +4219,9 @@ $('body').on('click','.upload-image',function () {
 			})
 		});
 
-	// trigger click for firefox
-	if(navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
-		$('#upload-image-input').trigger('click');
-		}
-	// other browsers
-	else {
-		var evt = document.createEvent("HTMLEvents");
-		evt.initEvent("click", true, true);
-		$('#upload-image-input')[0].dispatchEvent(evt);
-		}
+	// trigger click
+	triggerClickOnInputFile($('#upload-image-input'));
+
 	});
 
 function uploadAttachment(e, thisUploadButton) {

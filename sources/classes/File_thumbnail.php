@@ -98,6 +98,7 @@ class File_thumbnail extends Managed_DataObject
         if ($notNullUrl) {
             $thumb->whereAdd('url IS NOT NULL');
         }
+        $thumb->orderBy('modified ASC');    // the first created, a somewhat ugly hack
         $thumb->limit(1);
         if (!$thumb->find(true)) {
             throw new NoResultException($thumb);
@@ -129,23 +130,88 @@ class File_thumbnail extends Managed_DataObject
 
     static function path($filename)
     {
-        // TODO: Store thumbnails in their own directory and don't use File::path here
-        return File::path($filename);
+        File::tryFilename($filename);
+
+        // NOTE: If this is left empty in default config, it will be set to File::path('thumb')
+        $dir = common_config('thumbnail', 'dir');
+
+        if (!in_array($dir[mb_strlen($dir)-1], ['/', '\\'])) {
+            $dir .= DIRECTORY_SEPARATOR;
+        }
+
+        return $dir . $filename;
     }
 
     static function url($filename)
     {
-        // TODO: Store thumbnails in their own directory and don't use File::url here
-        return File::url($filename);
+        File::tryFilename($filename);
+
+        // FIXME: private site thumbnails?
+
+        $path = common_config('thumbnail', 'path');
+        if (empty($path)) {
+            return File::url('thumb')."/{$filename}";
+        }
+
+        $protocol = (GNUsocial::useHTTPS() ? 'https' : 'http');
+        $server = common_config('thumbnail', 'server') ?: common_config('site', 'server');
+
+        if ($path[mb_strlen($path)-1] != '/') {
+            $path .= '/';
+        }
+        if ($path[0] != '/') {
+            $path = '/'.$path;
+        }
+
+        return $protocol.'://'.$server.$path.$filename;
     }
 
+    public function getFilename()
+    {
+        return File::tryFilename($this->filename);
+    }
+
+    /**
+     *
+     * @return  string  full filesystem path to the locally stored thumbnail file
+     * @throws  
+     */
     public function getPath()
     {
-        $filepath = self::path($this->filename);
-        if (!file_exists($filepath)) {
-            throw new FileNotFoundException($filepath);
+        $oldpath = File::path($this->getFilename());
+        $thumbpath = self::path($this->getFilename());
+
+        // If we have a file in our old thumbnail storage path, move (or copy) it to the new one
+        // (if the if/elseif don't match, we have a $thumbpath just as we should and can return it)
+        if (file_exists($oldpath) && !file_exists($thumbpath)) {
+            try {
+                // let's get the filename of the File, to check below if it happens to be identical
+                $file_filename = $this->getFile()->getFilename();
+            } catch (NoResultException $e) {
+                // reasonably the function calling us will handle the following as "File_thumbnail entry should be deleted"
+                throw new FileNotFoundException($thumbpath);
+            } catch (InvalidFilenameException $e) {
+                // invalid filename in getFile()->getFilename(), just
+                // means the File object isn't stored locally and that
+                // means it's safe to move it below.
+                $file_filename = null;
+            }
+
+            if ($this->getFilename() === $file_filename) {
+                // special case where thumbnail file exactly matches stored File filename
+                common_debug('File filename and File_thumbnail filename match on '.$this->file_id.', copying instead');
+                copy($oldpath, $thumbpath);
+            } elseif (!rename($oldpath, $thumbpath)) {
+                common_log(LOG_ERR, 'Could not move thumbnail from '._ve($oldpath).' to '._ve($thumbpath));
+                throw new ServerException('Could not move thumbnail from old path to new path.');
+            } else {
+                common_log(LOG_DEBUG, 'Moved thumbnail '.$this->file_id.' from '._ve($oldpath).' to '._ve($thumbpath));
+            }
+        } elseif (!file_exists($thumbpath)) {
+            throw new FileNotFoundException($thumbpath);
         }
-        return $filepath;
+
+        return $thumbpath;
     }
 
     public function getUrl()
@@ -188,11 +254,15 @@ class File_thumbnail extends Managed_DataObject
 
     public function delete($useWhere=false)
     {
-        if (!empty($this->filename) && file_exists(File_thumbnail::path($this->filename))) {
-            $deleted = @unlink(self::path($this->filename));
+        try {
+            $thumbpath = self::path($this->getFilename());
+            // if file does not exist, try to delete it
+            $deleted = !file_exists($thumbpath) || @unlink($thumbpath);
             if (!$deleted) {
-                common_log(LOG_ERR, sprintf('Could not unlink existing file: "%s"', self::path($this->filename)));
+                common_log(LOG_ERR, 'Could not unlink existing thumbnail file: '._ve($thumbpath));
             }
+        } catch (InvalidFilenameException $e) {
+            common_log(LOG_ERR, 'Deleting object but not attempting deleting file: '._ve($e->getMessage()));
         }
 
         return parent::delete($useWhere);
@@ -203,6 +273,10 @@ class File_thumbnail extends Managed_DataObject
         return File::getByID($this->file_id);
     }
 
+    public function getFileId()
+    {
+        return $this->file_id;
+    }
 
     static public function hashurl($url)
     {

@@ -80,12 +80,13 @@ class Ostatus_profile extends Managed_DataObject
         return $this->uri;
     }
 
-    public function fromProfile(Profile $profile)
+    static function fromProfile(Profile $profile)
     {
-        $oprofile = Ostatus_profile::getKV('profile_id', $profile->id);
+        $oprofile = Ostatus_profile::getKV('profile_id', $profile->getID());
         if (!$oprofile instanceof Ostatus_profile) {
-            throw new Exception('No Ostatus_profile for Profile ID: '.$profile->id);
+            throw new Exception('No Ostatus_profile for Profile ID: '.$profile->getID());
         }
+        return $oprofile;
     }
 
     /**
@@ -539,7 +540,6 @@ class Ostatus_profile extends Managed_DataObject
 
         try {
             $stored = Notice::saveActivity($activity, $actor, $options);
-            Ostatus_source::saveNew($stored, $this, $method);
         } catch (Exception $e) {
             common_log(LOG_ERR, "OStatus save of remote message $sourceUri failed: " . $e->getMessage());
             throw $e;
@@ -1116,6 +1116,8 @@ class Ostatus_profile extends Managed_DataObject
      */
     protected static function createActivityObjectProfile(ActivityObject $object, array $hints=array())
     {
+        common_debug('Attempting to create an Ostatus_profile from an ActivityObject with ID: '._ve($object->id));
+
         $homeuri = $object->id;
         $discover = false;
 
@@ -1145,12 +1147,12 @@ class Ostatus_profile extends Managed_DataObject
             }
         }
 
-        if (array_key_exists('feedurl', $hints)) {
-            $feeduri = $hints['feedurl'];
-        } else {
+        if (!array_key_exists('feedurl', $hints)) {
             $discover = new FeedDiscovery();
-            $feeduri = $discover->discoverFromURL($homeuri);
+            $hints['feedurl'] = $discover->discoverFromURL($homeuri);
+            common_debug(__METHOD__.' did not have a "feedurl" hint, FeedDiscovery found '._ve($hints['feedurl']));
         }
+        $feeduri = $hints['feedurl'];
 
         if (array_key_exists('salmon', $hints)) {
             $salmonuri = $hints['salmon'];
@@ -1281,6 +1283,14 @@ class Ostatus_profile extends Managed_DataObject
      */
     public function updateFromActivityObject(ActivityObject $object, array $hints=array())
     {
+        if (self::getActivityObjectProfileURI($object) !== $this->getUri()) {
+            common_log(LOG_ERR, 'Trying to update profile with URI '._ve($this->getUri()).' from ActivityObject with URI: '._ve(self::getActivityObjectProfileURI($object)));
+            // FIXME: Maybe not AuthorizationException?
+            throw new AuthorizationException('Trying to update profile from ActivityObject with different URI.');
+        }
+
+        common_debug('Updating Ostatus_profile with URI '._ve($this->getUri()).' from ActivityObject');
+
         if ($this->isGroup()) {
             $group = $this->localGroup();
             self::updateGroup($group, $object, $hints);
@@ -1296,8 +1306,8 @@ class Ostatus_profile extends Managed_DataObject
         if ($avatar && !isset($ptag)) {
             try {
                 $this->updateAvatar($avatar);
-            } catch (Exception $ex) {
-                common_log(LOG_WARNING, "Exception updating OStatus profile avatar: " . $ex->getMessage());
+            } catch (Exception $e) {
+                common_log(LOG_WARNING, 'Exception ('.get_class($e).') updating OStatus profile avatar: ' . $e->getMessage());
             }
         }
     }
@@ -1362,7 +1372,8 @@ class Ostatus_profile extends Managed_DataObject
         // @todo tags from categories
 
         if ($profile->id) {
-            common_log(LOG_DEBUG, "Updating OStatus profile $profile->id from remote info $object->id: " . var_export($object, true) . var_export($hints, true));
+            //common_debug('Updating OStatus profile '._ve($profile->getID().' from remote info '._ve($object->id).': ' . _ve($object) . _ve($hints));
+            common_debug('Updating OStatus profile '._ve($profile->getID()).' from remote info '._ve($object->id).' gathered from hints: '._ve($hints));
             $profile->update($orig);
         }
     }
@@ -1386,7 +1397,8 @@ class Ostatus_profile extends Managed_DataObject
         $group->homepage = self::getActivityObjectHomepage($object, $hints);
 
         if ($group->id) {   // If no id, we haven't called insert() yet, so don't run update()
-            common_log(LOG_DEBUG, "Updating OStatus group $group->id from remote info $object->id: " . var_export($object, true) . var_export($hints, true));
+            //common_debug('Updating OStatus group '._ve($group->getID().' from remote info '._ve($object->id).': ' . _ve($object) . _ve($hints));
+            common_debug('Updating OStatus group '._ve($group->getID()).' from remote info '._ve($object->id).' gathered from hints: '._ve($hints));
             $group->update($orig);
         }
     }
@@ -1407,7 +1419,8 @@ class Ostatus_profile extends Managed_DataObject
         $tag->tagger = $tagger->profile_id;
 
         if ($tag->id) {
-            common_log(LOG_DEBUG, "Updating OStatus peopletag $tag->id from remote info $object->id: " . var_export($object, true) . var_export($hints, true));
+            //common_debug('Updating OStatus peopletag '._ve($tag->getID().' from remote info '._ve($object->id).': ' . _ve($object) . _ve($hints));
+            common_debug('Updating OStatus peopletag '._ve($tag->getID()).' from remote info '._ve($object->id).' gathered from hints: '._ve($hints));
             $tag->update($orig);
         }
     }
@@ -1561,8 +1574,10 @@ class Ostatus_profile extends Managed_DataObject
      */
     public static function ensureWebfinger($addr)
     {
-        // First, try the cache
+        // Normalize $addr, i.e. add 'acct:' if missing
+        $addr = Discovery::normalize($addr);
 
+        // Try the cache
         $uri = self::cacheGet(sprintf('ostatus_profile:webfinger:%s', $addr));
 
         if ($uri !== false) {
@@ -1578,7 +1593,7 @@ class Ostatus_profile extends Managed_DataObject
         }
 
         // Try looking it up
-        $oprofile = Ostatus_profile::getKV('uri', Discovery::normalize($addr));
+        $oprofile = Ostatus_profile::getKV('uri', $addr);
 
         if ($oprofile instanceof Ostatus_profile) {
             self::cacheSet(sprintf('ostatus_profile:webfinger:%s', $addr), $oprofile->getUri());
@@ -1836,22 +1851,28 @@ class Ostatus_profile extends Managed_DataObject
     {
         $orig = clone($this);
 
-        common_debug('URIFIX These identities both say they are each other: "'.$orig->uri.'" and "'.$profile_uri.'"');
+        common_debug('URIFIX These identities both say they are each other: '._ve($orig->uri).' and '._ve($profile_uri));
         $this->uri = $profile_uri;
 
-        if (array_key_exists('feedurl', $hints)) {
-            if (!empty($this->feeduri)) {
-                common_debug('URIFIX Changing FeedSub ['.$feedsub->id.'] feeduri "'.$feedsub->uri.'" to "'.$hints['feedurl']);
-                $feedsub = FeedSub::getKV('uri', $this->feeduri);
+        if (array_key_exists('feedurl', $hints) && common_valid_http_url($hints['feedurl'])) {
+            try {
+                $feedsub = FeedSub::getByUri($this->feeduri);
+                common_debug('URIFIX Changing FeedSub id==['._ve($feedsub->id).'] feeduri '._ve($feedsub->uri).' to '._ve($hints['feedurl']));
                 $feedorig = clone($feedsub);
                 $feedsub->uri = $hints['feedurl'];
                 $feedsub->updateWithKeys($feedorig);
-            } else {
-                common_debug('URIFIX Old Ostatus_profile did not have feedurl set, ensuring feed: '.$hints['feedurl']);
+            } catch (EmptyPkeyValueException $e) {
+                common_debug('URIFIX Old Ostatus_profile did not have feedurl set, ensuring new feedurl: '._ve($hints['feedurl']));
+                FeedSub::ensureFeed($hints['feedurl']);
+            } catch (NoResultException $e) {
+                common_debug('URIFIX Missing FeedSub entry for the Ostatus_profile, ensuring new feedurl: '._ve($hints['feedurl']));
                 FeedSub::ensureFeed($hints['feedurl']);
             }
             $this->feeduri = $hints['feedurl'];
+        } elseif (array_key_exists('feedurl')) {
+            common_log(LOG_WARN, 'The feedurl hint we got was not a valid HTTP URL: '._ve($hints['feedurl']));
         }
+
         if (array_key_exists('salmon', $hints)) {
             common_debug('URIFIX Changing Ostatus_profile salmonuri from "'.$this->salmonuri.'" to "'.$hints['salmon'].'"');
             $this->salmonuri = $hints['salmon'];

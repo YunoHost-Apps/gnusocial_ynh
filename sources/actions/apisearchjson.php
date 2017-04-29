@@ -57,7 +57,7 @@ class ApiSearchJSONAction extends ApiPrivateAuthAction
      *
      * @return boolean true if nothing goes wrong
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
 
@@ -95,9 +95,9 @@ class ApiSearchJSONAction extends ApiPrivateAuthAction
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         $this->showResults();
     }
 

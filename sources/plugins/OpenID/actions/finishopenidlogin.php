@@ -29,9 +29,9 @@ class FinishopenidloginAction extends Action
     var $username = null;
     var $message = null;
 
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         if (common_is_real_login()) {
             // TRANS: Client error message trying to log on with OpenID while already logged on.
             $this->clientError(_m('Already logged in.'));

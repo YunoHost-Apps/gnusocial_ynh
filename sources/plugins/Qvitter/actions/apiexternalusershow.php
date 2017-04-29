@@ -46,14 +46,22 @@ class ApiExternalUserShowAction extends ApiPrivateAuthAction
     {
         parent::prepare($args);
 
-        $this->format = 'json';        
+        $this->format = 'json';
 
         $profileurl = urldecode($this->arg('profileurl'));
         $nickname = urldecode($this->arg('nickname'));
 
 		$this->profile = new stdClass();
-		$this->profile->external = null;
+        $this->profile->external = null;
 		$this->profile->local = null;
+
+        // the user might not exist in our db yet, try to use the Ostatus plugin
+        // to get it in there
+        $validate = new Validate();
+        if ($validate->uri($profileurl)) {
+            $ostatus_profile = Ostatus_profile::ensureProfileURL($profileurl);
+            $local_profile = Profile::getKV('id',$ostatus_profile->profile_id);
+            }
 
 		// we can get urls of two types of urls 	(1) ://instance/nickname
 		//						    				(2) ://instance/user/1234
@@ -97,9 +105,13 @@ class ApiExternalUserShowAction extends ApiPrivateAuthAction
 			}
 
 		// case (1)
-		$local_profile = Profile::getKV('profileurl',$profileurl);
+        if(!isset($local_profile)) {
+            $local_profile = Profile::getKV('profileurl',$profileurl);
+            }
 
 		if($local_profile instanceof Profile) {
+
+            $this->profile->local = $this->twitterUserArray($local_profile);
 
 			// if profile url is not ending with nickname, this is probably a single user instance
 			if(!substr($local_profile->profileurl, -strlen($local_profile->nickname))===$local_profile->nickname) {
@@ -117,7 +129,6 @@ class ApiExternalUserShowAction extends ApiPrivateAuthAction
 				}
 
 			$this->profile->external = $external_profile;
-			$this->profile->local = $this->twitterUserArray($local_profile);
 			return true;
 			}
 
@@ -138,13 +149,9 @@ class ApiExternalUserShowAction extends ApiPrivateAuthAction
     {
         parent::handle();
 
-        if(is_null($this->profile->local) && is_null($this->profile->external)) {
-            $this->clientError(_('List not found.'), 404);
-        } else {
-            $this->initDocument('json');
-        	$this->showJsonObjects($this->profile);
-            $this->endDocument('json');
-        }
+        $this->initDocument('json');
+    	$this->showJsonObjects($this->profile);
+        $this->endDocument('json');
     }
 
     /**

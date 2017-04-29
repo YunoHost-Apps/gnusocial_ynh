@@ -141,6 +141,9 @@ class GNUsocial
         // Load settings from database; note we need autoload for this
         Config::loadSettings();
 
+        self::fillConfigVoids();
+        self::verifyLoadedConfig();
+
         self::initPlugins();
     }
 
@@ -415,6 +418,56 @@ class GNUsocial
 
         if (empty($config['db']['database'])) {
             throw new ServerException("No database server for this site.");
+        }
+    }
+
+    static function fillConfigVoids()
+    {
+        // special cases on empty configuration options
+        if (!common_config('thumbnail', 'dir')) {
+            common_config_set('thumbnail', 'dir', File::path('thumb'));
+        }
+    }
+
+    /**
+     * Verify that the loaded config is good. Not complete, but will
+     * throw exceptions on common configuration problems I hope.
+     *
+     * Might make changes to the filesystem, to created dirs, but will
+     * not make database changes.
+     */
+    static function verifyLoadedConfig()
+    {
+        $mkdirs = [];
+
+        if (common_config('htmlpurifier', 'Cache.DefinitionImpl') === 'Serializer'
+                && !is_dir(common_config('htmlpurifier', 'Cache.SerializerPath'))) {
+            $mkdirs[common_config('htmlpurifier', 'Cache.SerializerPath')] = 'HTMLPurifier Serializer cache';
+        }
+
+        // go through our configurable storage directories
+        foreach (['attachments', 'thumbnail'] as $dirtype) {
+            $dir = common_config($dirtype, 'dir');
+            if (!empty($dir) && !is_dir($dir)) {
+                $mkdirs[$dir] = $dirtype;
+            }
+        }
+
+        // try to create those that are not directories
+        foreach ($mkdirs as $dir=>$description) {
+            if (is_file($dir)) {
+                throw new ConfigException('Expected directory for '._ve($description).' is a file!');
+            }
+            if (!mkdir($dir)) {
+                throw new ConfigException('Could not create directory for '._ve($description).': '._ve($dir));
+            }
+            if (!chmod($dir, 0775)) {
+                common_log(LOG_WARNING, 'Could not chmod 0775 on directory for '._ve($description).': '._ve($dir));
+            }
+        }
+
+        if (!is_array(common_config('public', 'autosource'))) {
+            throw new ConfigException('Configuration option public/autosource is not an array.');
         }
     }
 

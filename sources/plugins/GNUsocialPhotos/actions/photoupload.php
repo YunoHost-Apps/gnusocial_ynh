@@ -36,16 +36,16 @@ class PhotouploadAction extends Action
 {
     var $user = null;
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         $this->user = common_current_user();
         return true;
     }
 
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         if($_SERVER['REQUEST_METHOD'] == 'POST') {
             $this->handlePost();
         }

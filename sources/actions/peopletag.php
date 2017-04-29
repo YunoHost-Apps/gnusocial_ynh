@@ -62,7 +62,7 @@ class PeopletagAction extends Action
         }
     }
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         $this->page = ($this->arg('page')) ? ($this->arg('page')+0) : 1;
@@ -84,9 +84,9 @@ class PeopletagAction extends Action
         return true;
     }
 
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         $this->showPage();
     }
 

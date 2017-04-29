@@ -194,7 +194,12 @@
 	"userMutes":"Accounts you're muting",
 	"userBlocked":"Blocked accounts",
 	"userMuted":"Muted accounts",
-	"mutedStreamDescription":"You've hidden these accounts from your timeline. You will still recieve notifications from these accounts, unless you select &quot;Hide notifications from muted users&quot; from the cog wheel menu on the notifications page.",
+	"mutedStreamDescription":"You've hidden these accounts from your timeline. You will still receive notifications from these accounts, unless you select &quot;Hide notifications from muted users&quot; from the cog wheel menu on the notifications page.",
 	"profileAndSettings":"Profile and settings",
-	"profileSettings":"Profile settings"
+	"profileSettings":"Profile settings",
+	"thisIsABookmark":"This is a bookmark created in the Classic interface",
+	"thisIsARemoteUser":"<strong>Attention!</strong> This is a remote user. This page is only a cached copy of their profile, and includes only data known to this GNU social instance. Go to the <a href=\"{remote-profile-url}\" donthijack>user's profile on their server</a> to view their full profile.",
+	"findSomeone":"Find someone",
+	"findSomeoneTooltip":"Input a username or a profile url, e.g. @localuser or https://remote.instance/nickname",
+	"tooltipAttachFile":"Attach a file"
 }

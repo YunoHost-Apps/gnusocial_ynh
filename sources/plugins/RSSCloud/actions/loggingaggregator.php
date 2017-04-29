@@ -57,7 +57,7 @@ class LoggingAggregatorAction extends Action
      *
      * @return boolean false if user doesn't exist
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
 
@@ -77,9 +77,9 @@ class LoggingAggregatorAction extends Action
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         if (empty($this->url)) {
             // TRANS: Form validation error displayed when a URL parameter is missing.

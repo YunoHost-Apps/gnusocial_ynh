@@ -55,7 +55,7 @@ class DeletegroupAction extends RedirectingAction
      * @fixme merge common setup code with other group actions
      * @fixme allow group admins to delete their own groups
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
 
@@ -114,9 +114,9 @@ class DeletegroupAction extends RedirectingAction
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($this->arg('no')) {
                 $this->returnToPrevious();

@@ -196,5 +196,10 @@
 	"userMuted":"Ignorerade konton",
 	"mutedStreamDescription":"Du har dolt dessa användare från dina flöden. Du kommer fortfarande få notiser från dem, om du inte väljer &quot;Dölj notiser från användare som du ignorerar&quot; från kugghjulsmenyn på notissidan.",
 	"profileAndSettings":"Profil och inställningar",
-	"profileSettings":"Profilinställningar"
+	"profileSettings":"Profilinställningar",
+	"thisIsABookmark":"Detta är ett bokmärke som skapats i GNU socials standardgränssnitt",
+	"thisIsARemoteUser":"<strong>Obs!</strong> Detta är en extern användare. Den här sidan visar bara en cachad version av deras profil. Gå till <a href=\"{remote-profile-url}\" donthijack>använderas profil på deras server</a> för se hela deras profil.",
+	"findSomeone":"Hitta en användare",
+	"findSomeoneTooltip":"Skriv in ett användarnamn eller en url till en profil, t ex @anvandarnamn eller https://extern.server/anvandarnamn",
+	"tooltipAttachFile":"Bifoga en fil"
 }

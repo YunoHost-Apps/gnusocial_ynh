@@ -34,9 +34,9 @@ if (!defined('STATUSNET')) {
 
 class FacebookloginAction extends Action
 {
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         if (common_is_real_login()) {
             // TRANS: Client error displayed when trying to login while already logged in.

@@ -51,7 +51,7 @@ class DeleteapplicationAction extends Action
      *
      * @return boolean success flag
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         if (!parent::prepare($args)) {
             return false;
@@ -89,7 +89,7 @@ class DeleteapplicationAction extends Action
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 

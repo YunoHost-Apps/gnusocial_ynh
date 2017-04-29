@@ -47,9 +47,9 @@ class AnonDisfavorAction extends RedirectingAction
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         $profile = AnonymousFavePlugin::getAnonProfile();
 

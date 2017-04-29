@@ -47,7 +47,7 @@ class GeocodeAction extends Action
     var $lon = null;
     var $location = null;
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         $token = $this->trimmed('token');
@@ -70,7 +70,7 @@ class GeocodeAction extends Action
      * @return nothing
      *
      */
-    function handle($args)
+    function handle()
     {
         header('Content-Type: application/json; charset=utf-8');
         $location_object = array();

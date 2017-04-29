@@ -95,7 +95,7 @@ class FavoritedAction extends Action
      *
      * @todo move queries from showContent() to here
      */
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
         $this->page = ($this->arg('page')) ? ($this->arg('page')+0) : 1;
@@ -114,9 +114,9 @@ class FavoritedAction extends Action
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
 
         $this->showPage();
     }
@@ -167,7 +167,7 @@ class FavoritedAction extends Action
      */
     function showContent()
     {
-        $stream = new PopularNoticeStream(Profile::current());
+        $stream = new PopularNoticeStream($this->scoped);
         $notice = $stream->getNotices(($this->page-1)*NOTICES_PER_PAGE, NOTICES_PER_PAGE+1);
 
         $nl = new NoticeList($notice, $this);

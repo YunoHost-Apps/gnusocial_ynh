@@ -60,7 +60,7 @@ class EditpeopletagAction extends Action
      * Prepare to run
      */
 
-    function prepare($args)
+    function prepare(array $args = array())
     {
         parent::prepare($args);
 
@@ -135,9 +135,9 @@ class EditpeopletagAction extends Action
      *
      * @return void
      */
-    function handle($args)
+    function handle()
     {
-        parent::handle($args);
+        parent::handle();
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $this->trySave();
         } else {

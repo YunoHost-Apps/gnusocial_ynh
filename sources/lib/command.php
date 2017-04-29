@@ -28,7 +28,7 @@ class Command
 
     function __construct($user=null)
     {
-        $this->scoped = $user->getProfile();
+        $this->scoped = empty($user)?null:$user->getProfile();
         $this->user = $user;
     }
 

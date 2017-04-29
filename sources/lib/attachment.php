@@ -35,7 +35,7 @@ if (!defined('GNUSOCIAL')) { exit(1); }
  */
 class Attachment extends AttachmentListItem
 {
-    function showLink() {
+    function showNoticeAttachment() {
         if (Event::handle('StartShowAttachmentLink', array($this->out, $this->attachment))) {
             $this->out->elementStart('div', array('id' => 'attachment_view',
                                                   'class' => 'h-entry'));
