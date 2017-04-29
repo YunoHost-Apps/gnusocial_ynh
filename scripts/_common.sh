@@ -76,7 +76,7 @@ ynh_patch_source () {
 # @todo : more separation (adding function)
 # example: ynh_get_source "/var/www/gnusocial/"
 #
-# usage: ynh_get_source DEST_DIR [USER]
+# usage: ynh_get_source DEST_DIR [USER [SOURCE_ID]]
 ynh_dl_sources () {
     local DEST=$1
     local AS_USER=${2:-admin}
@@ -93,4 +93,13 @@ ynh_dl_sources () {
             rm "${SOURCE_FILE}"; \
         done) || ynh_die "Unable to dowload source"
     fi
+}
+
+# Set up all sources files
+# example: ynh_setup_sources "/var/www/gnusocial/"
+#
+# usage: ynh_setup_sources DEST_DIR [USER [SOURCE_ID]]
+ynh_setup_sources () {
+    ynh_dl_sources ()
+    ynh_patch_source ()
 }
