@@ -1,4 +1,6 @@
 #!/bin/bash
+source /usr/share/yunohost/helpers
+source _common.sh
 
 set -eu
 
@@ -17,9 +19,6 @@ dbuser=$app
 installphp=/scripts/install_cli.php
 plugins=$(echo ../conf/plugins.conf)
 
-
-# Source app helpers
-. /usr/share/yunohost/helpers
 
 # Check if admin exists
 ynh_user_exists "$admin" \
@@ -51,10 +50,12 @@ ynh_mysql_create_db $dbname $dbuser $dbpwd
 # Copy files to the right place
 final_path=/var/www/$app
 sudo mkdir -p $final_path
-sudo cp -a ../sources/. $final_path
+sudo chown -R www-data:www-data $final_path
+# setup sources
+ynh_setup_sources $final_path www-data
 
 # Modify Nginx configuration file and copy it to Nginx conf directory
-sed -i "s@PATHTOCHANGE@$final_path/@g" ../conf/nginx.conf*
+sed -i "s@PATHTOCHANGE@$final_path/@g" ../conf/nginx.conf
 sudo cp ../conf/nginx.conf /etc/nginx/conf.d/$domain.d/$app.conf
 
 # Reload Nginx and regenerate SSOwat conf
@@ -67,12 +68,12 @@ sudo php $final_path$installphp --sitename=$nodename --server=$domain --dbtype=m
 
 sleep 1
 
-# Set permissions to gnusocial directory
-sudo chown -R www-data: $final_path
-
 # Add GNU Social plugins
 cat $plugins | sudo tee -a $final_path/config.php
 
+# TODO: SSO is not working so far
+
 # Start GNU Social queue daemon
+# No daemons activate, and need a service here (TODO)
 sudo bash $final_path/scripts/startdaemons.sh || ynh_die "Queue daemon not started"
 

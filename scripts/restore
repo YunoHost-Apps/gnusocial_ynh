@@ -1,0 +1,66 @@
+#!/bin/bash
+
+set -eu
+
+# Get multi-instances specific variables
+app=$YNH_APP_INSTANCE_NAME
+
+# Set app specific variables
+dbname=$app
+dbuser=$app
+
+# Source app helpers
+source /usr/share/yunohost/helpers
+
+# Retrieve old app settings
+domain=$(ynh_app_setting_get "$app" domain)
+path=$(ynh_app_setting_get "$app" path)
+
+# TODO: Check domain/path availability with app helper
+if [ ${#path} -gt 1 ]; then
+  sudo yunohost app checkurl "${domain}${path}" -a "$app" \
+    || ynh_die "The path ${domain}${path} is not available for app installation."
+fi
+
+# Check destination directory
+DESTDIR="/var/www/$app"
+[[ -d $DESTDIR ]] && ynh_die \
+"The destination directory '$DESTDIR' already exists.\
+ You should safely delete it before restoring this app."
+
+
+# Check configuration files
+nginx_conf="/etc/nginx/conf.d/${domain}.d/${app}.conf"
+[[ -f $nginx_conf ]] && ynh_die \
+"The NGINX configuration for this app already exists at '${nginx_conf}'.
+ You should safely delete it before restoring this app."
+[[ -f $phpfpm_conf ]] && ynh_die \
+"The PHP FPM configuration for this app already exists at '${phpfpm_conf}'.
+ You should safely delete it before restoring this app."
+
+# Restore the app files
+sudo cp -a ./www "$DESTDIR"
+
+sudo service nginx reload
+
+# Create and restore the database
+dbpass=$(sudo cat /etc/yunohost/mysql)
+mysql -u$dbuser -p$dbpass -e "CREATE DATASE IF NOT EXISTS $dbname"
+mysql -u$dbuser -p$dbpass $dbname < ./db.sql
+
+
+# Fix app ownerships & permissions
+sudo chown -R $app: "$DESTDIR" "$DATADIR"
+sudo find ${DESTDIR}/ -type f -print0 | sudo xargs -0 chmod 0644
+sudo find ${DESTDIR}/ -type d -print0 | sudo xargs -0 chmod 0755
+sudo chmod 640 "${DESTDIR}/config/config.php"
+
+# Restore configuration files
+sudo cp -a ./conf/nginx.conf   "$nginx_conf"
+sudo cp -a ./conf/php-fpm.conf "$phpfpm_conf"
+
+
+# Start GNU Social queue daemon
+sudo bash $final_path/scripts/startdaemons.sh \
+    && echo "Starting queue daemons" || ynh_die "Queue daemon not started"
+

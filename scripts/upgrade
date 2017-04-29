@@ -1,4 +1,6 @@
 #!/bin/bash
+source /usr/share/yunohost/helpers
+source _common.sh
 
 # Exit on command errors and treat unset variables as an error
 set -eu
@@ -9,17 +11,11 @@ domain=$(sudo yunohost app setting $app domain)
 path=$(sudo yunohost app setting $app path)
 final_path=/var/www/$app
 
-# Source YunoHost helpers
-. /usr/share/yunohost/helpers
-
 # Stop GNU social queue daemon
 sudo bash $final_path/scripts/stopdaemons.sh
 
-# Copy source files
-sudo cp -fa ../sources/. $final_path/
-
-# Set permissions to gnusocial directory
-sudo chown -R www-data: $final_path
+# setup sources
+ynh_setup_sources $final_path www-data
 
 # Modify Nginx configuration file and copy it to Nginx conf directory
 sed -i "s@PATHTOCHANGE@$final_path/@g" ../conf/nginx.conf*
@@ -34,5 +30,6 @@ sudo service nginx reload
 # Launch GNU social upgrade script
 sudo php $final_path/scripts/upgrade.php
 
-# Start GNU social queue daemon
-sudo bash $final_path/scripts/startdaemons.sh#!/bin/bash
+# Start GNU Social queue daemon
+# No daemons activate, and need a service here (TODO)
+sudo bash $final_path/scripts/startdaemons.sh
