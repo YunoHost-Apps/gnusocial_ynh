@@ -54,7 +54,7 @@ class ApiAccountUpdateDeliveryDeviceAction extends ApiAuthAction
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -73,9 +73,9 @@ class ApiAccountUpdateDeliveryDeviceAction extends ApiAuthAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         if (!in_array($this->format, array('xml', 'json'))) {
             $this->clientError(

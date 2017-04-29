@@ -57,7 +57,8 @@ class ShowfavoritesAction extends ShowstreamAction
 
     public function getStream()
     {
-        return new FaveNoticeStream($this->getTarget(), $this->scoped);
+        $own = $this->scoped instanceof Profile ? $this->scoped->sameAs($this->getTarget()) : false;
+        return new FaveNoticeStream($this->getTarget()->getID(), $own);
     }
 
     function getFeeds()
@@ -65,52 +66,53 @@ class ShowfavoritesAction extends ShowstreamAction
         return array(new Feed(Feed::JSON,
                               common_local_url('ApiTimelineFavorites',
                                                array(
-                                                    'id' => $this->getTarget()->getNickname(),
+                                                    'id' => $this->user->nickname,
                                                     'format' => 'as')),
                               // TRANS: Feed link text. %s is a username.
                               sprintf(_('Feed for favorites of %s (Activity Streams JSON)'),
-                                      $this->getTarget()->getNickname())),
+                                      $this->user->nickname)),
                      new Feed(Feed::RSS1,
                               common_local_url('favoritesrss',
-                                               array('nickname' => $this->getTarget()->getNickname())),
+                                               array('nickname' => $this->user->nickname)),
                               // TRANS: Feed link text. %s is a username.
                               sprintf(_('Feed for favorites of %s (RSS 1.0)'),
-                                      $this->getTarget()->getNickname())),
+                                      $this->user->nickname)),
                      new Feed(Feed::RSS2,
                               common_local_url('ApiTimelineFavorites',
                                                array(
-                                                    'id' => $this->getTarget()->getNickname(),
+                                                    'id' => $this->user->nickname,
                                                     'format' => 'rss')),
                               // TRANS: Feed link text. %s is a username.
                               sprintf(_('Feed for favorites of %s (RSS 2.0)'),
-                                      $this->getTarget()->getNickname())),
+                                      $this->user->nickname)),
                      new Feed(Feed::ATOM,
                               common_local_url('ApiTimelineFavorites',
                                                array(
-                                                    'id' => $this->getTarget()->getNickname(),
+                                                    'id' => $this->user->nickname,
                                                     'format' => 'atom')),
                               // TRANS: Feed link text. %s is a username.
                               sprintf(_('Feed for favorites of %s (Atom)'),
-                                      $this->getTarget()->getNickname())));
+                                      $this->user->nickname)));
     }
 
     function showEmptyListMessage()
     {
         if (common_logged_in()) {
-            if ($this->getTarget()->sameAs($this->getScoped())) {
+            $current_user = common_current_user();
+            if ($this->user->id === $current_user->id) {
                 // TRANS: Text displayed instead of favourite notices for the current logged in user that has no favourites.
                 $message = _('You haven\'t chosen any favorite notices yet. Click the fave button on notices you like to bookmark them for later or shed a spotlight on them.');
             } else {
                 // TRANS: Text displayed instead of favourite notices for a user that has no favourites while logged in.
                 // TRANS: %s is a username.
-                $message = sprintf(_('%s hasn\'t added any favorite notices yet. Post something interesting they would add to their favorites :)'), $this->getTarget()->getNickname());
+                $message = sprintf(_('%s hasn\'t added any favorite notices yet. Post something interesting they would add to their favorites :)'), $this->user->nickname);
             }
         }
         else {
                 // TRANS: Text displayed instead of favourite notices for a user that has no favourites while not logged in.
                 // TRANS: %s is a username, %%%%action.register%%%% is a link to the user registration page.
                 // TRANS: (link text)[link] is a Mark Down link.
-            $message = sprintf(_('%s hasn\'t added any favorite notices yet. Why not [register an account](%%%%action.register%%%%) and then post something interesting they would add to their favorites :)'), $this->getTarget()->getNickname());
+            $message = sprintf(_('%s hasn\'t added any favorite notices yet. Why not [register an account](%%%%action.register%%%%) and then post something interesting they would add to their favorites :)'), $this->user->nickname);
         }
 
         $this->elementStart('div', 'guide');
@@ -147,7 +149,7 @@ class ShowfavoritesAction extends ShowstreamAction
 
 class FavoritesNoticeList extends NoticeList
 {
-    function newListItem(Notice $notice)
+    function newListItem($notice)
     {
         return new FavoritesNoticeListItem($notice, $this->out);
     }

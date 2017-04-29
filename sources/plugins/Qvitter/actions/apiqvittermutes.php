@@ -74,7 +74,7 @@ class ApiQvitterMutesAction extends ApiPrivateAuthAction
     {
         parent::handle();
 
-        $this->target = $this->scoped;
+        $this->target = Profile::current();
 
 		if(!$this->target instanceof Profile) {
 			$this->clientError(_('You have to be logged in to view your mutes.'), 403);

@@ -77,16 +77,6 @@ class Nickname
     const MAX_LEN = 64;
 
     /**
-     * Regex with non-capturing group that matches whitespace and some
-     * characters which are allowed right before an @ or ! when mentioning
-     * other users. Like: 'This goes out to:@mmn (@chimo too) (!awwyiss).'
-     *
-     * FIXME: Make this so you can have multiple whitespace but not multiple
-     * parenthesis or something. '(((@n_n@)))' might as well be a smiley.
-     */
-    const BEFORE_MENTIONS = '(?:^|[\s\.\,\:\;\[\(]+)';
-
-    /**
      * Nice simple check of whether the given string is a valid input nickname,
      * which can be normalized into an internally canonical form.
      *
@@ -126,17 +116,15 @@ class Nickname
      */
     public static function normalize($str, $checkuse=false)
     {
-        if (mb_strlen($str) > self::MAX_LEN) {
-            // Display forms must also fit!
-            throw new NicknameTooLongException();
-        }
-
         // We should also have UTF-8 normalization (å to a etc.)
         $str = trim($str);
         $str = str_replace('_', '', $str);
         $str = mb_strtolower($str);
 
-        if (mb_strlen($str) < 1) {
+        if (mb_strlen($str) > self::MAX_LEN) {
+            // Display forms must also fit!
+            throw new NicknameTooLongException();
+        } elseif (mb_strlen($str) < 1) {
             throw new NicknameEmptyException();
         } elseif (!self::isCanonical($str)) {
             throw new NicknameInvalidException();
@@ -174,8 +162,6 @@ class Nickname
      public static function isBlacklisted($str)
      {
          $blacklist = common_config('nickname', 'blacklist');
-         if(!$blacklist)
-         	return false;
          return in_array($str, $blacklist);
      }
 

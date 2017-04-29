@@ -36,7 +36,7 @@ class SQLProfilePlugin extends Plugin
         $versions[] = array('name' => 'SQLProfile',
                             'version' => GNUSOCIAL_VERSION,
                             'author' => 'Brion Vibber',
-                            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/SQLProfile',
+                            'homepage' => 'http://status.net/wiki/Plugin:SQLProfile',
                             'rawdescription' =>
                             // TRANS: Plugin description.
                             _m('Debug tool to watch for poorly indexed DB queries.'));

@@ -53,7 +53,7 @@ class PeopletagsubscribersAction extends Action
         return true;
     }
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
         $this->page = ($this->arg('page')) ? ($this->arg('page')+0) : 1;
@@ -117,9 +117,9 @@ class PeopletagsubscribersAction extends Action
         }
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         $this->showPage();
     }
 
@@ -167,7 +167,7 @@ class PeopletagSubscriberList extends ProfileList
         $this->peopletag = $peopletag;
     }
 
-    function newListItem(Profile $profile)
+    function newListItem($profile)
     {
         return new PeopletagSubscriberListItem($profile, $this->peopletag, $this->action);
     }

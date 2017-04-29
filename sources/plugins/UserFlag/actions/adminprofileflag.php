@@ -52,7 +52,7 @@ class AdminprofileflagAction extends Action
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -107,9 +107,9 @@ class AdminprofileflagAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         $this->showPage();
     }
@@ -200,7 +200,7 @@ class FlaggedProfileList extends ProfileList
      *
      * @return ProfileListItem newly-created item
      */
-    function newListItem(Profile $profile)
+    function newListItem($profile)
     {
         return new FlaggedProfileListItem($this->profile, $this->action);
     }

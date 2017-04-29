@@ -170,6 +170,12 @@ class AllAction extends ShowstreamAction
             }
             $ibs->show();
         }
+        // XXX: make this a little more convenient
+
+        if (!common_config('performance', 'high')) {
+            $pop = new InboxTagCloudSection($this, $this->target);
+            $pop->show();
+        }
     }
 }
 

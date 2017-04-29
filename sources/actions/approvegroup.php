@@ -50,7 +50,7 @@ class ApprovegroupAction extends Action
     /**
      * Prepare to run
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -139,9 +139,9 @@ class ApprovegroupAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         try {
             if ($this->approve) {

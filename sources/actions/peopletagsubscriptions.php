@@ -56,7 +56,7 @@ class PeopletagsubscriptionsAction extends Action
         }
     }
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -97,9 +97,9 @@ class PeopletagsubscriptionsAction extends Action
         return true;
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         $this->showPage();
     }
 

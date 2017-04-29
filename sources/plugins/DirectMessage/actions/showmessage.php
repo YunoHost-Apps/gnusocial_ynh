@@ -62,7 +62,7 @@ class ShowmessageAction extends Action
      *
      * @return success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -89,7 +89,7 @@ class ShowmessageAction extends Action
         return true;
     }
 
-    function handle()
+    function handle($args)
     {
         $this->showPage();
     }

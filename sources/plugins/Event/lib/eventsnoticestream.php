@@ -1,7 +1,5 @@
 <?php
 
-if (!defined('GNUSOCIAL')) { exit(1); }
-
 class RawEventsNoticeStream extends NoticeStream
 {
     function getNoticeIds($offset, $limit, $since_id, $max_id)
@@ -64,7 +62,7 @@ class EventsNoticeStream extends ScopingNoticeStream
         parent::__construct(new CachingNoticeStream($stream, $key), $scoped);
     }
 
-    protected function filter(Notice $notice)
+    function filter($notice)
     {
         if (!parent::filter($notice)) {
             // if not in our scope, return false

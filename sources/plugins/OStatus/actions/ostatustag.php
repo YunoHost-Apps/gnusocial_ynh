@@ -31,7 +31,7 @@ class OStatusTagAction extends OStatusInitAction
     var $profile;
     var $err;
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 

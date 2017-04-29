@@ -33,7 +33,7 @@ class NewphotoAction extends Action
 {
     var $user = null;
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
         $this->user = common_current_user();
@@ -50,9 +50,9 @@ class NewphotoAction extends Action
         return true;
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         if ($this->isPost()) {
             $this->handlePost($args);

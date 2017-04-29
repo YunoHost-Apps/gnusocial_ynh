@@ -21,9 +21,9 @@ if (!defined('STATUSNET') && !defined('LACONICA')) { exit(1); }
 
 class CasloginAction extends Action
 {
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         if (common_is_real_login()) {
             // TRANS: Client error displayed when trying to log in while already logged on.
             $this->clientError(_m('Already logged in.'));

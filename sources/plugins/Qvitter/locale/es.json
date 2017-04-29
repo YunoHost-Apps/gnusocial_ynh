@@ -171,7 +171,7 @@
 	"failedUnblockingUser":"Falló el desbloqueo del usuario .",
 	"unblockUser": "Desbloquear a {username}",
 	"tooltipBlocksYou":"{username} te ha bloqueado.",
-	"silenced":"Prohibido",
+	"silenced":"Silenciado",
 	"silencedPlural":"Perfiles silenciados",
 	"silencedUsersOnThisInstance":"Perfiles silenciados en {site-title}",
 	"sandboxed":"Aislado",
@@ -195,10 +195,5 @@
 	"userMuted":"Cuentas silenciadas",
 	"mutedStreamDescription":"Has ocultado estas cuentas de tu línea temporal. Seguirás recibiendo notificaciones de dichas cuentas a menos que selecciones &quot;Ocultar notificaciones de usuarios silencioados&quot; desde el menú con forma de rueda dentada en la página de notificaciones.",
 	"profileAndSettings":"Perfil y ajustes",
-	"profileSettings":"Ajustes del perfil",
-	"thisIsABookmark":"This is a bookmark created in the Classic interface",
-	"thisIsARemoteUser":"<strong>Attention!</strong> This is a remote user. This page is only a cached copy of their profile, and includes only data known to this GNU social instance. Go to the <a href=\"{remote-profile-url}\" donthijack>user's profile on their server</a> to view their full profile.",
-	"findSomeone":"Find someone",
-	"findSomeoneTooltip":"Input a username or a profile url, e.g. @localuser or https://remote.instance/nickname",
-	"tooltipAttachFile":"Attach a file"
+	"profileSettings":"Ajustes del perfil"
 }

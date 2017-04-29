@@ -81,7 +81,7 @@ function save_twitter_user($twitter_id, $screen_name)
         }
     } catch (NoResultException $e) {
         // No old users exist for this id
-
+    
         // Kill any old, invalid records for this screen name
         // XXX: Is this really only supposed to be run if the above getForeignUser fails?
         try {
@@ -389,16 +389,11 @@ function format_status($notice)
     // XXX: Make this an optional setting?
     $statustxt = preg_replace('/(^|\s)!([A-Za-z0-9]{1,64})/', "\\1#\\2", $statustxt);
 
-    // detect links, each link uses 23 characters on twitter
-    $numberOfLinks = preg_match_all('`((http|https|ftp)://[^\s<]+[^\s<\.)])`i', $statustxt);
-    $statusWithoutLinks = preg_replace('`((http|https|ftp)://[^\s<]+[^\s<\.)])`i', '', $statustxt);
-    $statusLength = mb_strlen($statusWithoutLinks)  + $numberOfLinks * 23;
-
     // Twitter still has a 140-char hardcoded max.
-    if ($statusLength > 140) {
+    if (mb_strlen($statustxt) > 140) {
         $noticeUrl = common_shorten_url($notice->getUrl());
-        // each link uses 23 chars on twitter + 3 for the ' … ' => 26
-        $statustxt = mb_substr($statustxt, 0, 140 - 26) . ' … ' . $noticeUrl;
+        $urlLen = mb_strlen($noticeUrl);
+        $statustxt = mb_substr($statustxt, 0, 140 - ($urlLen + 3)) . ' … ' . $noticeUrl;
     }
 
     return $statustxt;

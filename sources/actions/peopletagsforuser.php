@@ -54,7 +54,7 @@ class PeopletagsforuserAction extends Action
         }
     }
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -95,9 +95,9 @@ class PeopletagsforuserAction extends Action
         return true;
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         $this->showPage();
     }
 

@@ -106,40 +106,6 @@ class File extends Managed_DataObject
             // We don't have the file's URL since before, so let's continue.
         }
 
-        // if the given url is an local attachment url and the id already exists, don't
-        // save a new file record. This should never happen, but let's make it foolproof
-        // FIXME: how about attachments servers?
-        $u = parse_url($given_url);
-        if (isset($u['host']) && $u['host'] === common_config('site', 'server')) {
-            $r = Router::get();
-            // Skip the / in the beginning or $r->map won't match
-            try {
-                $args = $r->map(mb_substr($u['path'], 1));
-                if ($args['action'] === 'attachment') {
-                    try {
-                        // $args['attachment'] should always be set if action===attachment, given our routing rules
-                        $file = File::getByID($args['attachment']);
-                        return $file;
-                    } catch (EmptyPkeyValueException $e) {
-                        // ...but $args['attachment'] can also be 0...
-                    } catch (NoResultException $e) {
-                        // apparently this link goes to us, but is _not_ an existing attachment (File) ID?
-                    }
-                }
-            } catch (Exception $e) {
-                // Some other exception was thrown from $r->map, likely a
-                // ClientException (404) because of some malformed link to
-                // our own instance. It's still a valid URL however, so we
-                // won't abort anything... I noticed this when linking:
-                // https://social.umeahackerspace.se/mmn/foaf' (notice the
-                // apostrophe in the end, making it unrecognizable for our
-                // URL routing.
-                // That specific issue (the apostrophe being part of a link
-                // is something that may or may not have been fixed since,
-                // in lib/util.php in common_replace_urls_callback().
-            }
-        }
-
         $file = new File;
         $file->url = $given_url;
         if (!empty($redir_data['protected'])) $file->protected = $redir_data['protected'];
@@ -260,19 +226,18 @@ class File extends Managed_DataObject
 
     public function getFilename()
     {
-        return self::tryFilename($this->filename);
-    }
-
-    public function getSize()
-    {
-        return intval($this->size);
+        if (!self::validFilename($this->filename)) {
+            // TRANS: Client exception thrown if a file upload does not have a valid name.
+            throw new ClientException(_("Invalid filename."));
+        }
+        return $this->filename;
     }
 
     // where should the file go?
 
     static function filename(Profile $profile, $origname, $mimetype)
     {
-        $ext = self::guessMimeExtension($mimetype, $origname);
+        $ext = self::guessMimeExtension($mimetype);
 
         // Normalize and make the original filename more URL friendly.
         $origname = basename($origname, ".$ext");
@@ -293,54 +258,19 @@ class File extends Managed_DataObject
         return $filename;
     }
 
-    /**
-     * @param $mimetype The mimetype we've discovered for this file.
-     * @param $filename An optional filename which we can use on failure.
-     */
-    static function guessMimeExtension($mimetype, $filename=null)
+    static function guessMimeExtension($mimetype)
     {
         try {
-            // first see if we know the extension for our mimetype
             $ext = common_supported_mime_to_ext($mimetype);
-            // we do, so use it!
-            return $ext;
-        } catch (UnknownMimeExtensionException $e) {
-            // We don't know the extension for this mimetype, but let's guess.
-
-            // If we can't recognize the extension from the MIME, we try
-            // to guess based on filename, if one was supplied.
-            if (!is_null($filename) && preg_match('/^.+\.([A-Za-z0-9]+)$/', $filename, $matches)) {
-                // we matched on a file extension, so let's see if it means something.
-                $ext = mb_strtolower($matches[1]);
-
-                $blacklist = common_config('attachments', 'extblacklist');
-                // If we got an extension from $filename we want to check if it's in a blacklist
-                // so we avoid people uploading .php files etc.
-                if (array_key_exists($ext, $blacklist)) {
-                    if (!is_string($blacklist[$ext])) {
-                        // we don't have a safe replacement extension
-                        throw new ClientException(_('Blacklisted file extension.'));
-                    }
-                    common_debug('Found replaced extension for filename '._ve($filename).': '._ve($ext));
-
-                    // return a safe replacement extension ('php' => 'phps' for example)
-                    return $blacklist[$ext];
-                }
-                // the attachment extension based on its filename was not blacklisted so it's ok to use it
-                return $ext;
-            }
         } catch (Exception $e) {
-            common_log(LOG_INFO, 'Problem when figuring out extension for mimetype: '._ve($e));
+            // We don't support this mimetype, but let's guess the extension
+            $matches = array();
+            if (!preg_match('/\/([a-z0-9]+)/', mb_strtolower($mimetype), $matches)) {
+                throw new Exception('Malformed mimetype: '.$mimetype);
+            }
+            $ext = $matches[1];
         }
-
-        // If nothing else has given us a result, try to extract it from
-        // the mimetype value (this turns .jpg to .jpeg for example...)
-        $matches = array();
-        // FIXME: try to build a regexp that will get jpeg from image/jpeg as well as json from application/jrd+json
-        if (!preg_match('/\/([a-z0-9]+)/', mb_strtolower($mimetype), $matches)) {
-            throw new Exception('Malformed mimetype: '.$mimetype);
-        }
-        return mb_strtolower($matches[1]);
+        return mb_strtolower($ext);
     }
 
     /**
@@ -351,27 +281,19 @@ class File extends Managed_DataObject
         return preg_match('/^[A-Za-z0-9._-]+$/', $filename);
     }
 
-    static function tryFilename($filename)
-    {
-        if (!self::validFilename($filename))
-        {
-            throw new InvalidFilenameException($filename);
-        }
-        // if successful, return the filename for easy if-statementing
-        return $filename;
-    }
-
     /**
      * @throws ClientException on invalid filename
      */
     static function path($filename)
     {
-        self::tryFilename($filename);
-
+        if (!self::validFilename($filename)) {
+            // TRANS: Client exception thrown if a file upload does not have a valid name.
+            throw new ClientException(_("Invalid filename."));
+        }
         $dir = common_config('attachments', 'dir');
 
-        if (!in_array($dir[mb_strlen($dir)-1], ['/', '\\'])) {
-            $dir .= DIRECTORY_SEPARATOR;
+        if ($dir[strlen($dir)-1] != '/') {
+            $dir .= '/';
         }
 
         return $dir . $filename;
@@ -379,7 +301,10 @@ class File extends Managed_DataObject
 
     static function url($filename)
     {
-        self::tryFilename($filename);
+        if (!self::validFilename($filename)) {
+            // TRANS: Client exception thrown if a file upload does not have a valid name.
+            throw new ClientException(_("Invalid filename."));
+        }
 
         if (common_config('site','private')) {
 
@@ -484,8 +409,6 @@ class File extends Managed_DataObject
      * @param $width  int   Max width of thumbnail in pixels. (if null, use common_config values)
      * @param $height int   Max height of thumbnail in pixels. (if null, square-crop to $width)
      * @param $crop   bool  Crop to the max-values' aspect ratio
-     * @param $force_still  bool    Don't allow fallback to showing original (such as animated GIF)
-     * @param $upscale      mixed   Whether or not to scale smaller images up to larger thumbnail sizes. (null = site default)
      *
      * @return File_thumbnail
      *
@@ -501,13 +424,7 @@ class File extends Managed_DataObject
             // null  means "always use file as thumbnail"
             // false means you get choice between frozen frame or original when calling getThumbnail
             if (is_null(common_config('thumbnail', 'animated')) || !$force_still) {
-                try {
-                    // remote files with animated GIFs as thumbnails will match this
-                    return File_thumbnail::byFile($this);
-                } catch (NoResultException $e) {
-                    // and if it's not a remote file, it'll be safe to use the locally stored File
-                    throw new UseFileAsThumbnailException($this);
-                }
+                throw new UseFileAsThumbnailException($this->id);
             }
         }
 
@@ -524,27 +441,12 @@ class File extends Managed_DataObject
         return $filepath;
     }
 
-    public function getAttachmentUrl()
+    public function getUrl($prefer_local=true)
     {
-        return common_local_url('attachment', array('attachment'=>$this->getID()));
-    }
-
-    /**
-     *  @param  mixed   $use_local  true means require local, null means prefer local, false means use whatever is stored
-     */
-    public function getUrl($use_local=null)
-    {
-        if ($use_local !== false) {
-            if (is_string($this->filename) || !empty($this->filename)) {
-                // A locally stored file, so let's generate a URL for our instance.
-                return self::url($this->getFilename());
-            }
-            if ($use_local) {
-                // if the file wasn't stored locally (has filename) and we require a local URL
-                throw new FileNotStoredLocallyException($this);
-            }
+        if ($prefer_local && !empty($this->filename)) {
+            // A locally stored file, so let's generate a URL for our instance.
+            return self::url($this->filename);
         }
-
 
         // No local filename available, return the URL we have stored
         return $this->url;
@@ -622,9 +524,7 @@ class File extends Managed_DataObject
 
     function stream($offset=0, $limit=NOTICES_PER_PAGE, $since_id=0, $max_id=0)
     {
-        // FIXME: Try to get the Profile::current() here in some other way to avoid mixing
-        // the current session user with possibly background/queue processing.
-        $stream = new FileNoticeStream($this, Profile::current());
+        $stream = new FileNoticeStream($this);
         return $stream->getNotices($offset, $limit, $since_id, $max_id);
     }
 
@@ -691,13 +591,6 @@ class File extends Managed_DataObject
         $title = $this->title ?: $this->filename;
 
         return $title ?: null;
-    }
-
-    public function setTitle($title)
-    {
-        $orig = clone($this);
-        $this->title = mb_strlen($title) > 0 ? $title : null;
-        return $this->update($orig);
     }
 
     static public function hashurl($url)

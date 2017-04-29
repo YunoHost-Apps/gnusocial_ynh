@@ -44,7 +44,7 @@ class PeopletagautocompleteAction extends Action
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -112,7 +112,7 @@ class PeopletagautocompleteAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
         //common_log(LOG_DEBUG, 'Autocomplete data: ' . json_encode($this->tags));
         if ($this->tags) {

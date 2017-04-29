@@ -77,6 +77,13 @@ class PublicGroupNav extends Menu
                 // TRANS: Menu item title in search group navigation panel.
                 _('User groups'), $this->actionName == 'groups', 'nav_groups');
 
+            if (!common_config('performance', 'high')) {
+                // TRANS: Menu item in search group navigation panel.
+                $this->out->menuItem(common_local_url('publictagcloud'), _m('MENU','Recent tags'),
+                                     // TRANS: Menu item title in search group navigation panel.
+                                     _('Recent tags'), $this->actionName == 'publictagcloud', 'nav_recent-tags');
+            }
+
             if (count(common_config('nickname', 'featured')) > 0) {
                 // TRANS: Menu item in search group navigation panel.
                 $this->out->menuItem(common_local_url('featured'), _m('MENU','Featured'),

@@ -62,7 +62,7 @@ class TagunsubAction extends TagsubAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
         // Throws exception on error
 

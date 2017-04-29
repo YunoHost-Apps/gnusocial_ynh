@@ -60,7 +60,7 @@ class AdminPanelAction extends Action
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -119,7 +119,7 @@ class AdminPanelAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $this->checkSessionToken();
@@ -246,7 +246,7 @@ class AdminPanelAction extends Action
         $this->clientError(_('saveSettings() not implemented.'));
     }
 
-    static function canAdmin($name)
+    function canAdmin($name)
     {
         $isOK = false;
 

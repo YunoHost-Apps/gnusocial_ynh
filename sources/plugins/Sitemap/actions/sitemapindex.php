@@ -49,7 +49,7 @@ class SitemapindexAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
         header('Content-Type: text/xml; charset=UTF-8');
         $this->startXML();

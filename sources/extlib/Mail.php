@@ -1,8 +1,8 @@
 <?php
 /**
- * PEAR's Mail:: interface.
+ *  PEAR's Mail:: interface.
  *
- * PHP version 5
+ * PHP versions 4 and 5
  *
  * LICENSE:
  *
@@ -39,7 +39,7 @@
  * @author      Chuck Hagenbuch <chuck@horde.org>
  * @copyright   1997-2010 Chuck Hagenbuch
  * @license     http://opensource.org/licenses/bsd-license.php New BSD License
- * @version     CVS: $Id$
+ * @version     CVS: $Id: Mail.php 294747 2010-02-08 08:18:33Z clockwerx $
  * @link        http://pear.php.net/package/Mail/
  */
 
@@ -50,7 +50,8 @@ require_once 'PEAR.php';
  * mailers under the PEAR hierarchy, and provides supporting functions
  * useful in multiple mailer backends.
  *
- * @version $Revision$
+ * @access public
+ * @version $Revision: 294747 $
  * @package Mail
  */
 class Mail
@@ -59,7 +60,7 @@ class Mail
      * Line terminator used for separating header lines.
      * @var string
      */
-    public $sep = "\r\n";
+    var $sep = "\r\n";
 
     /**
      * Provides an interface for generating Mail:: objects of various
@@ -67,10 +68,10 @@ class Mail
      *
      * @param string $driver The kind of Mail:: object to instantiate.
      * @param array  $params The parameters to pass to the Mail:: object.
-     *
      * @return object Mail a instance of the driver class or if fails a PEAR Error
+     * @access public
      */
-    public static function factory($driver, $params = array())
+    function &factory($driver, $params = array())
     {
         $driver = strtolower($driver);
         @include_once 'Mail/' . $driver . '.php';
@@ -107,9 +108,10 @@ class Mail
      *               containing a descriptive error message on
      *               failure.
      *
+     * @access public
      * @deprecated use Mail_mail::send instead
      */
-    public function send($recipients, $headers, $body)
+    function send($recipients, $headers, $body)
     {
         if (!is_array($headers)) {
             return PEAR::raiseError('$headers must be an array');
@@ -145,8 +147,10 @@ class Mail
      * filter is to prevent mail injection attacks.
      *
      * @param array $headers The associative array of headers to sanitize.
+     *
+     * @access private
      */
-    protected function _sanitizeHeaders(&$headers)
+    function _sanitizeHeaders(&$headers)
     {
         foreach ($headers as $key => $value) {
             $headers[$key] =
@@ -169,8 +173,9 @@ class Mail
      *               otherwise returns an array containing two
      *               elements: Any From: address found in the headers,
      *               and the plain text version of the headers.
+     * @access private
      */
-    protected function prepareHeaders($headers)
+    function prepareHeaders($headers)
     {
         $lines = array();
         $from = null;
@@ -230,8 +235,9 @@ class Mail
      *
      * @return mixed An array of forward paths (bare addresses) or a PEAR_Error
      *               object if the address list could not be parsed.
+     * @access private
      */
-    protected function parseRecipients($recipients)
+    function parseRecipients($recipients)
     {
         include_once 'Mail/RFC822.php';
 
@@ -244,8 +250,7 @@ class Mail
         // Parse recipients, leaving out all personal info. This is
         // for smtp recipients, etc. All relevant personal information
         // should already be in the headers.
-        $Mail_RFC822 = new Mail_RFC822();
-        $addresses = $Mail_RFC822->parseAddressList($recipients, 'localhost', false);
+        $addresses = Mail_RFC822::parseAddressList($recipients, 'localhost', false);
 
         // If parseAddressList() returned a PEAR_Error object, just return it.
         if (is_a($addresses, 'PEAR_Error')) {

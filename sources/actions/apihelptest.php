@@ -28,7 +28,9 @@
  * @link      http://status.net/
  */
 
-if (!defined('GNUSOCIAL')) { exit(1); }
+if (!defined('STATUSNET')) {
+    exit(1);
+}
 
 /**
  * Returns the string "ok" in the requested format with a 200 OK HTTP status code.
@@ -42,9 +44,29 @@ if (!defined('GNUSOCIAL')) { exit(1); }
  */
 class ApiHelpTestAction extends ApiPrivateAuthAction
 {
-    protected function handle()
+    /**
+     * Take arguments for running
+     *
+     * @param array $args $_REQUEST args
+     *
+     * @return boolean success flag
+     */
+    function prepare($args)
     {
-        parent::handle();
+        parent::prepare($args);
+        return true;
+    }
+
+    /**
+     * Handle the request
+     *
+     * @param array $args $_REQUEST data (unused)
+     *
+     * @return void
+     */
+    function handle($args)
+    {
+        parent::handle($args);
 
         if ($this->format == 'xml') {
             $this->initDocument('xml');
@@ -55,8 +77,12 @@ class ApiHelpTestAction extends ApiPrivateAuthAction
             print '"ok"';
             $this->endDocument('json');
         } else {
-            // TRANS: Client error displayed when coming across a non-supported API method.
-            throw new ClientException(_('API method not found.'), 404);
+            $this->clientError(
+                // TRANS: Client error displayed when coming across a non-supported API method.
+                _('API method not found.'),
+                404,
+                $this->format
+            );
         }
     }
 

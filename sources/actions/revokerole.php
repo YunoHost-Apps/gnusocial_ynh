@@ -49,7 +49,7 @@ class RevokeRoleAction extends ProfileFormAction
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         if (!parent::prepare($args)) {
             return false;

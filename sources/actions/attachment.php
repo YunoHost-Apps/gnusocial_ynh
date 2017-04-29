@@ -96,7 +96,7 @@ class AttachmentAction extends ManagedAction
     {
         if (empty($this->attachment->filename)) {
             // if it's not a local file, gtfo
-            common_redirect($this->attachment->getUrl(), 303);
+            common_redirect($this->attachment->url, 303);
         }
 
         parent::showPage();
@@ -132,5 +132,9 @@ class AttachmentAction extends ManagedAction
     function showSections() {
         $ns = new AttachmentNoticeSection($this);
         $ns->show();
+        if (!common_config('performance', 'high')) {
+            $atcs = new AttachmentTagCloudSection($this);
+            $atcs->show();
+        }
     }
 }

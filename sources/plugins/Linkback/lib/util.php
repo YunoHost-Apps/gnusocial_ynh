@@ -7,7 +7,7 @@ function linkback_lenient_target_match($body, $target) {
 function linkback_get_source($source, $target) {
     // Check if we are pinging ourselves and ignore
     $localprefix = common_config('site', 'server') . '/' . common_config('site', 'path');
-    if(linkback_lenient_target_match($source, $localprefix) === 0) {
+    if(linkback_lenient_target_match($source, $localprefix)) {
         common_debug('Ignoring self ping from ' . $source . ' to ' . $target);
         return NULL;
     }
@@ -22,7 +22,7 @@ function linkback_get_source($source, $target) {
 
     $body = htmlspecialchars_decode($response->getBody());
     // We're slightly more lenient in our link detection than the spec requires
-    if(linkback_lenient_target_match($body, $target) === FALSE) {
+    if(!linkback_lenient_target_match($body, $target)) {
         return NULL;
     }
 
@@ -56,7 +56,7 @@ function linkback_get_target($target) {
         }
         if(!$user) {
             preg_match('/\/([^\/\?#]+)(?:#.*)?$/', $response->getEffectiveUrl(), $match);
-            if(linkback_lenient_target_match(common_profile_url($match[1]), $response->getEffectiveUrl()) !== FALSE) {
+            if(linkback_lenient_target_match(common_profile_url($match[1]), $response->getEffectiveUrl())) {
                 $user = User::getKV('nickname', $match[1]);
             }
         }
@@ -70,7 +70,7 @@ function linkback_get_target($target) {
 
 function linkback_is_contained_in($entry, $target) {
     foreach ((array)$entry['properties'] as $key => $values) {
-        if(count(array_filter($values, function($x) use ($target) { return linkback_lenient_target_match($x, $target) !== FALSE; })) > 0) {
+        if(count(array_filter($values, function($x) use ($target) { return linkback_lenient_target_match($x, $target); })) > 0) {
             return $entry['properties'];
         }
 
@@ -79,7 +79,7 @@ function linkback_is_contained_in($entry, $target) {
             if(isset($obj['type']) && array_intersect(array('h-cite', 'h-entry'), $obj['type']) &&
                isset($obj['properties']) && isset($obj['properties']['url']) &&
                count(array_filter($obj['properties']['url'],
-                     function($x) use ($target) { return linkback_lenient_target_match($x, $target) !== FALSE; })) > 0
+                     function($x) use ($target) { return linkback_lenient_target_match($x, $target); })) > 0
             ) {
                 return $entry['properties'];
             }
@@ -130,7 +130,7 @@ function linkback_entry_type($entry, $mf2, $target) {
 
     if($mf2['rels'] && $mf2['rels']['in-reply-to']) {
         foreach($mf2['rels']['in-reply-to'] as $url) {
-            if(linkback_lenient_target_match($url, $target) !== FALSE) {
+            if(linkback_lenient_target_match($url, $target)) {
                 return 'reply';
             }
         }
@@ -144,7 +144,7 @@ function linkback_entry_type($entry, $mf2, $target) {
     );
 
     foreach((array)$entry as $key => $values) {
-        if(count(array_filter($values, function($x) use ($target) { return linkback_lenient_target_match($x, $target) != FALSE; })) > 0) {
+        if(count(array_filter($values, function($x) use ($target) { return linkback_lenient_target_match($x, $target); })) > 0) {
             if($classes[$key]) { return $classes[$key]; }
         }
 
@@ -152,7 +152,7 @@ function linkback_entry_type($entry, $mf2, $target) {
             if(isset($obj['type']) && array_intersect(array('h-cite', 'h-entry'), $obj['type']) &&
                isset($obj['properties']) && isset($obj['properties']['url']) &&
                count(array_filter($obj['properties']['url'],
-                     function($x) use ($target) { return linkback_lenient_target_match($x, $target) != FALSE; })) > 0
+                     function($x) use ($target) { return linkback_lenient_target_match($x, $target); })) > 0
             ) {
                 if($classes[$key]) { return $classes[$key]; }
             }
@@ -201,13 +201,13 @@ function linkback_hcard($mf2, $url) {
 }
 
 function linkback_notice($source, $notice_or_user, $entry, $author, $mf2) {
-    $content = isset($entry['content']) ? $entry['content'][0]['html'] :
-              (isset($entry['summary']) ? $entry['summary'][0] : $entry['name'][0]);
+    $content = $entry['content'] ? $entry['content'][0]['html'] :
+              ($entry['summary'] ? $entry['sumary'][0] : $entry['name'][0]);
 
     $rendered = common_purify($content);
 
     if($notice_or_user instanceof Notice && $entry['type'] == 'mention') {
-        $name = isset($entry['name']) ? $entry['name'][0] : substr(common_strip_html($content), 0, 20).'…';
+        $name = $entry['name'] ? $entry['name'][0] : substr(common_strip_html($content), 0, 20).'…';
         $rendered = _m('linked to this from <a href="'.htmlspecialchars($source).'">'.htmlspecialchars($name).'</a>');
     }
 
@@ -241,16 +241,12 @@ function linkback_notice($source, $notice_or_user, $entry, $author, $mf2) {
         }
     }
 
-    if (isset($entry['published']) || isset($entry['updated'])) {
-        $options['created'] = isset($entry['published'])
-                                ? common_sql_date(strtotime($entry['published'][0]))
-                                : common_sql_date(strtotime($entry['updated'][0]));
+    if($entry['published'] || $entry['updated']) {
+        $options['created'] = $entry['published'] ? common_sql_date($entry['published'][0]) : common_sql_date($entry['updated'][0]);
     }
 
-    if (isset($entry['photo']) && common_valid_http_url($entry['photo'])) {
+    if($entry['photo']) {
         $options['urls'][] = $entry['photo'][0];
-    } elseif (isset($entry['photo'])) {
-        common_debug('Linkback got invalid HTTP URL for photo: '._ve($entry['photo']));
     }
 
     foreach((array)$entry['category'] as $tag) {
@@ -280,51 +276,18 @@ function linkback_notice($source, $notice_or_user, $entry, $author, $mf2) {
     return array($content, $options);
 }
 
-function linkback_avatar($profile, $url) {
-    // Ripped from OStatus plugin for now
-    $temp_filename = tempnam(sys_get_temp_dir(), 'linback_avatar');
-    try {
-        $imgData = HTTPClient::quickGet($url);
-        // Make sure it's at least an image file. ImageFile can do the rest.
-        if (false === getimagesizefromstring($imgData)) {
-            return false;
-        }
-        file_put_contents($temp_filename, $imgData);
-        unset($imgData);    // No need to carry this in memory.
-
-        $imagefile = new ImageFile(null, $temp_filename);
-        $filename = Avatar::filename($profile->id,
-                                     image_type_to_extension($imagefile->type),
-                                     null,
-                                     common_timestamp());
-        rename($temp_filename, Avatar::path($filename));
-    } catch (Exception $e) {
-        unlink($temp_filename);
-        throw $e;
-    }
-    // @todo FIXME: Hardcoded chmod is lame, but seems to be necessary to
-    // keep from accidentally saving images from command-line (queues)
-    // that can't be read from web server, which causes hard-to-notice
-    // problems later on:
-    //
-    // http://status.net/open-source/issues/2663
-    chmod(Avatar::path($filename), 0644);
-
-    $profile->setOriginal($filename);
-}
-
 function linkback_profile($entry, $mf2, $response, $target) {
-    if(isset($entry['author']) && isset($entry['author'][0]['properties'])) {
-        $author = $entry['author'][0]['properties'];
+    if(isset($entry['properties']['author']) && isset($entry['properties']['author'][0]['properties'])) {
+        $author = $entry['properties']['author'][0]['properties'];
     } else {
         $author = linkback_hcard($mf2, $response->getEffectiveUrl());
     }
 
     if(!$author) {
-        $author = array('name' => $entry['name']);
+        $author = array('name' => array($entry['name']));
     }
 
-    if (!isset($author['url']) || empty($author['url'])) {
+    if(!$author['url']) {
         $author['url'] = array($response->getEffectiveUrl());
     }
 
@@ -336,22 +299,19 @@ function linkback_profile($entry, $mf2, $response, $target) {
 
     try {
         $profile = Profile::fromUri($author['url'][0]);
-    } catch(UnknownUriException $ex) {
+    } catch(UnknownUriException $ex) {}
+
+    if(!($profile instanceof Profile)) {
         $profile = Profile::getKV('profileurl', $author['url'][0]);
     }
 
-    // XXX: Is this a good way to create the profile?
-    if (!$profile instanceof Profile) {
+    if(!($profile instanceof Profile)) {
         $profile = new Profile();
         $profile->profileurl = $author['url'][0];
         $profile->fullname = $author['name'][0];
-        $profile->nickname = isset($author['nickname']) ? $author['nickname'][0] : str_replace(' ', '', $author['name'][0]);
+        $profile->nickname = $author['nickname'] ? $author['nickname'][0] : str_replace(' ', '', $author['name'][0]);
         $profile->created = common_sql_now();
         $profile->insert();
-
-        if($author['photo'] && $author['photo'][0]) {
-            linkback_avatar($profile, $author['photo'][0]);
-        }
     }
 
     return array($profile, $author);
@@ -395,14 +355,10 @@ function linkback_save($source, $target, $response, $notice_or_user) {
             try { $dupe->saveKnownTags($options['tags']); } catch (ServerException $ex) {}
             try { $dupe->saveKnownUrls($options['urls']); } catch (ServerException $ex) {}
 
-            if (isset($options['reply_to'])) {
-                $dupe->reply_to = $options['reply_to'];
-            }
-            if (isset($options['repeat_of'])) {
-                $dupe->repeat_of = $options['repeat_of'];
-            }
-            if ($dupe->reply_to != $orig->reply_to || $dupe->repeat_of != $orig->repeat_of) {
-                $parent = Notice::getKV('id', $dupe->repeat_of ?: $dupe->reply_to);
+            if($options['reply_to']) { $dupe->reply_to = $options['reply_to']; }
+            if($options['repeat_of']) { $dupe->repeat_of = $options['repeat_of']; }
+            if($dupe->reply_to != $orig->reply_to || $dupe->repeat_of != $orig->repeat_of) {
+                $parent = Notice::getKV('id', $dupe->repost_of ? $dupe->repost_of : $dupe->reply_to);
                 if($parent instanceof Notice) {
                     // If we changed the reply_to or repeat_of we might live in a new conversation now
                     $dupe->conversation = $parent->conversation;

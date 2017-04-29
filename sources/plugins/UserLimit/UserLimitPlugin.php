@@ -86,7 +86,7 @@ class UserLimitPlugin extends Plugin
         $versions[] = array('name' => 'UserLimit',
                             'version' => GNUSOCIAL_VERSION,
                             'author' => 'Evan Prodromou',
-                            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/UserLimit',
+                            'homepage' => 'http://status.net/wiki/Plugin:UserLimit',
                             'description' =>
                             // TRANS: Plugin description.
                             _m('Limit the number of users who can register.'));

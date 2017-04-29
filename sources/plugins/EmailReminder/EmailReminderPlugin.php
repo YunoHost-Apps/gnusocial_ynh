@@ -185,7 +185,7 @@ class EmailReminderPlugin extends Plugin
             'name'           => 'EmailReminder',
             'version'        => GNUSOCIAL_VERSION,
             'author'         => 'Zach Copley',
-            'homepage'       => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/EmailReminder',
+            'homepage'       => 'http://status.net/wiki/Plugin:EmailReminder',
             // TRANS: Plugin description.
             'rawdescription' => _m('Send email reminders for various things.')
         );

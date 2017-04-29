@@ -44,34 +44,44 @@ function showProfileInfo(Ostatus_profile $oprofile) {
         echo "group\n";
     } else {
         $profile = $oprofile->localProfile();
-        foreach (array('nickname', 'fullname', 'bio', 'homepage', 'location') as $field) {
-            print "  $field: {$profile->$field}\n";
+        try {
+            foreach (array('nickname', 'fullname', 'bio', 'homepage', 'location') as $field) {
+                print "  $field: {$profile->$field}\n";
+            }
+        } catch (NoProfileException $e) {
+            print "local profile not found";
         }
     }
     echo "\n";
 }
 
-function fixProfile(Ostatus_profile $oprofile) {
+function fixProfile($uri) {
+    $oprofile = Ostatus_profile::getKV('uri', $uri);
+
+    if (!$oprofile) {
+        print "No OStatus remote profile known for URI $uri\n";
+        return false;
+    }
+
     echo "Before:\n";
     showProfileInfo($oprofile);
 
     $feedurl = $oprofile->feeduri;
-    $client = new HTTPClient();
+    $client = new HttpClient();
     $response = $client->get($feedurl);
     if ($response->isOk()) {
         echo "Updating profile from feed: $feedurl\n";
         $dom = new DOMDocument();
         if ($dom->loadXML($response->getBody())) {
-            if ($dom->documentElement->tagName !== 'feed') {
-                echo "  (no <feed> element in feed URL response; skipping)\n";
-                return false;
-            }
-            $actorObj = ActivityUtils::getFeedAuthor($dom->documentElement);
-            if ($actorObj) {
-                $oprofile->updateFromActivityObject($actorObj);
+            $feed = $dom->documentElement;
+            $entries = $dom->getElementsByTagNameNS(Activity::ATOM, 'entry');
+            if ($entries->length) {
+                $entry = $entries->item(0);
+                $activity = new Activity($entry, $feed);
+                $oprofile->checkAuthorship($activity);
                 echo "  (ok)\n";
             } else {
-                echo "  (no author on feed; skipping)\n";
+                echo "  (no entry; skipping)\n";
                 return false;
             }
         } else {
@@ -96,7 +106,7 @@ if (have_option('all')) {
     echo "Found $oprofile->N profiles:\n\n";
     while ($oprofile->fetch()) {
         try {
-            $ok = fixProfile($oprofile) && $ok;
+            $ok = fixProfile($oprofile->uri) && $ok;
         } catch (Exception $e) {
             $ok = false;
             echo "Failed on URI=="._ve($oprofile->uri).": {$e->getMessage()}\n";
@@ -110,7 +120,7 @@ if (have_option('all')) {
     echo "Found $oprofile->N matching profiles:\n\n";
     while ($oprofile->fetch()) {
         try {
-            $ok = fixProfile($oprofile) && $ok;
+            $ok = fixProfile($oprofile->uri) && $ok;
         } catch (Exception $e) {
             $ok = false;
             echo "Failed on URI=="._ve($oprofile->uri).": {$e->getMessage()}\n";
@@ -118,15 +128,8 @@ if (have_option('all')) {
     }
 } else if (!empty($args[0]) && $validate->uri($args[0])) {
     $uri = $args[0];
-    $oprofile = Ostatus_profile::getKV('uri', $uri);
-
-    if (!$oprofile instanceof Ostatus_profile) {
-        print "No OStatus remote profile known for URI $uri\n";
-        return false;
-    }
-
     try {
-        $ok = fixProfile($oprofile) && $ok;
+        $ok = fixProfile($oprofile->uri) && $ok;
     } catch (Exception $e) {
         $ok = false;
         echo "Failed on URI=="._ve($oprofile->uri).": {$e->getMessage()}\n";

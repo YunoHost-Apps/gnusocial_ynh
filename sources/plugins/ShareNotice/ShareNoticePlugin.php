@@ -211,7 +211,7 @@ class FacebookShareTarget extends NoticeShareTarget
      */
     function onPluginVersion(array &$versions)
     {
-        $url = 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/ShareNotice';
+        $url = 'http://status.net/wiki/Plugin:ShareNotice';
 
         $versions[] = array('name' => 'ShareNotice',
             'version' => GNUSOCIAL_VERSION,

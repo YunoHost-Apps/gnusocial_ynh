@@ -38,7 +38,7 @@ class BioAction extends Action
 {
     var $user = null;
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -51,9 +51,9 @@ class BioAction extends Action
 
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         $this->showPage();
     }
 

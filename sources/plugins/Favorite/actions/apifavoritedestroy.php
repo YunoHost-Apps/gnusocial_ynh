@@ -57,7 +57,7 @@ class ApiFavoriteDestroyAction extends ApiAuthAction
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -82,9 +82,9 @@ class ApiFavoriteDestroyAction extends ApiAuthAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         if ($_SERVER['REQUEST_METHOD'] != 'POST') {
             $this->clientError(

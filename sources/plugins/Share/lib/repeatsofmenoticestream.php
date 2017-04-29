@@ -28,7 +28,11 @@
  * @link      http://status.net/
  */
 
-if (!defined('GNUSOCIAL')) { exit(1); }
+if (!defined('STATUSNET')) {
+    // This check helps protect against security problems;
+    // your code file can't be executed directly from the web.
+    exit(1);
+}
 
 /**
  * Stream of notices that are repeats of mine
@@ -43,11 +47,14 @@ if (!defined('GNUSOCIAL')) { exit(1); }
 
 class RepeatsOfMeNoticeStream extends ScopingNoticeStream
 {
-    function __construct(Profile $target, Profile $scoped=null)
+    function __construct($user, $profile=-1)
     {
-        parent::__construct(new CachingNoticeStream(new RawRepeatsOfMeNoticeStream($target),
-                                                    'user:repeats_of_me:'.$target->getID()),
-                            $scoped);
+        if (is_int($profile) && $profile == -1) {
+            $profile = Profile::current();
+        }
+        parent::__construct(new CachingNoticeStream(new RawRepeatsOfMeNoticeStream($user),
+                                                    'user:repeats_of_me:'.$user->id),
+                            $profile);
     }
 }
 
@@ -63,11 +70,11 @@ class RepeatsOfMeNoticeStream extends ScopingNoticeStream
  */
 class RawRepeatsOfMeNoticeStream extends NoticeStream
 {
-    protected $target;
+    protected $user;
 
-    function __construct(Profile $target)
+    function __construct($user)
     {
-        $this->target = $target;
+        $this->user = $user;
     }
 
     function getNoticeIds($offset, $limit, $since_id, $max_id)
@@ -75,7 +82,7 @@ class RawRepeatsOfMeNoticeStream extends NoticeStream
         $qry =
           'SELECT DISTINCT original.id AS id ' .
           'FROM notice original JOIN notice rept ON original.id = rept.repeat_of ' .
-          'WHERE original.profile_id = ' . $this->target->getID() . ' ';
+          'WHERE original.profile_id = ' . $this->user->id . ' ';
 
         $since = Notice::whereSinceId($since_id, 'original.id', 'original.created');
         if ($since) {

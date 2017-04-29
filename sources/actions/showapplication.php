@@ -65,7 +65,7 @@ class ShowApplicationAction extends Action
      *
      * @return success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -101,9 +101,9 @@ class ShowApplicationAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 

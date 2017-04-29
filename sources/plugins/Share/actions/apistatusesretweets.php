@@ -54,7 +54,7 @@ class ApiStatusesRetweetsAction extends ApiAuthAction
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -89,9 +89,9 @@ class ApiStatusesRetweetsAction extends ApiAuthAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         $strm = $this->original->repeatStream($this->cnt);
 

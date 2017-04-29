@@ -41,15 +41,15 @@ if (count($args) == 0) {
 
 $email = $args[0];
 
-try {
-    $confirm = Confirm_address::getByAddress($email, EmailRegistrationPlugin::CONFIRMTYPE);
+$confirm = Confirm_address::getAddress($email, EmailRegistrationPlugin::CONFIRMTYPE);
 
+if (!empty($confirm)) {
     if (have_option('d', 'dryrun')) {
         print "[Dry run mode] Deleted confirmation code {$confirm->code} for {$confirm->address}.\n";
     } else {
         $confirm->delete();
         print "Deleted confirmation code {$confirm->code} for {$confirm->address}.\n";
     }
-} catch (NoResultException $e) {
-    print "Exception thrown for {$email}: {$e->getMessage()}";
+} else {
+    print "Couldn't find an email registration code for {$email}.\n";
 }

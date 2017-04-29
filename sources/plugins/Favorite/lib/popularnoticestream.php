@@ -28,7 +28,11 @@
  * @link      http://status.net/
  */
 
-if (!defined('GNUSOCIAL')) { exit(1); }
+if (!defined('STATUSNET')) {
+    // This check helps protect against security problems;
+    // your code file can't be executed directly from the web.
+    exit(1);
+}
 
 /**
  * Stream of notices sorted by popularity
@@ -43,12 +47,12 @@ if (!defined('GNUSOCIAL')) { exit(1); }
 
 class PopularNoticeStream extends ScopingNoticeStream
 {
-    function __construct(Profile $scoped=null)
+    function __construct($profile=null)
     {
         parent::__construct(new CachingNoticeStream(new RawPopularNoticeStream(),
                                                     'popular',
                                                     false),
-                            $scoped);
+                            $profile);
     }
 }
 

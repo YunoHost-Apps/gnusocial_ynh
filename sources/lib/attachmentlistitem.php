@@ -63,7 +63,7 @@ class AttachmentListItem extends Widget
     }
 
     function title() {
-        return $this->attachment->getTitle() ?: _('Untitled attachment');
+        return $this->attachment->getTitle();
     }
 
     function linkTitle() {
@@ -86,26 +86,28 @@ class AttachmentListItem extends Widget
     }
 
     function linkAttr() {
-        return array(
-                     'class' => 'u-url',
-                     'href' => $this->attachment->getAttachmentUrl(),
+        return array('class' => 'attachment',
+                     'href' => $this->attachment->getUrl(false),
+                     'id' => 'attachment-' . $this->attachment->id,
                      'title' => $this->linkTitle());
+    }
+
+    function showLink() {
+        $this->out->elementStart('a', $this->linkAttr());
+        $this->out->element('span', null, $this->linkTitle());
+        $this->showRepresentation();
+        $this->out->elementEnd('a');
     }
 
     function showNoticeAttachment()
     {
-        $this->showRepresentation();
+        $this->showLink();
     }
 
     function showRepresentation() {
         $enclosure = $this->attachment->getEnclosure();
 
         if (Event::handle('StartShowAttachmentRepresentation', array($this->out, $this->attachment))) {
-
-            $this->out->elementStart('label');
-            $this->out->element('a', $this->linkAttr(), $this->title());
-            $this->out->elementEnd('label');
-
             if (!empty($enclosure->mimetype)) {
                 // First, prepare a thumbnail if it exists.
                 $thumb = null;
@@ -139,13 +141,7 @@ class AttachmentListItem extends Widget
                     if ($thumb instanceof File_thumbnail) {
                         $this->out->element('img', $thumb->getHtmlAttrs(['class'=>'u-photo', 'alt' => '']));
                     } else {
-                        try {
-                            // getUrl(true) because we don't want to hotlink, could be made configurable
-                            $this->out->element('img', ['class'=>'u-photo', 'src'=>$this->attachment->getUrl(true), 'alt' => $this->attachment->getTitle()]);
-                        } catch (FileNotStoredLocallyException $e) {
-                            $url = $e->file->getUrl(false);
-                            $this->out->element('a', ['href'=>$url, 'rel'=>'external'], $url);
-                        }
+                        $this->out->element('img', array('class'=>'u-photo', 'src' => $this->attachment->getUrl(), 'alt' => $this->attachment->getTitle()));
                     }
                     unset($thumb);  // there's no need carrying this along after this
                     break;
@@ -172,7 +168,7 @@ class AttachmentListItem extends Widget
 
                 default:
                     unset($thumb);  // there's no need carrying this along
-                    switch (common_bare_mime($this->attachment->mimetype)) {
+                    switch ($this->attachment->mimetype) {
                     case 'text/plain':
                         $this->element('div', ['class'=>'e-content plaintext'], file_get_contents($this->attachment->getPath()));
                         break;
@@ -208,7 +204,11 @@ class AttachmentListItem extends Widget
      */
     protected function scrubHtmlFile(File $attachment)
     {
-        $path = $attachment->getPath();
+        $path = File::path($attachment->filename);
+        if (!file_exists($path) || !is_readable($path)) {
+            common_log(LOG_ERR, "Missing local HTML attachment $path");
+            return false;
+        }
         $raw = file_get_contents($path);
 
         // Normalize...

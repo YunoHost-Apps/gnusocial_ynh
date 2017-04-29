@@ -1,7 +1,5 @@
 <?php
 
-if (!defined('GNUSOCIAL')) { exit(1); }
-
 class RawBookmarksNoticeStream extends NoticeStream
 {
     protected $user_id;
@@ -62,7 +60,7 @@ class RawBookmarksNoticeStream extends NoticeStream
 
 class BookmarksNoticeStream extends ScopingNoticeStream
 {
-    function __construct($user_id, $own, Profile $scoped=null)
+    function __construct($user_id, $own, $profile = -1)
     {
         $stream = new RawBookmarksNoticeStream($user_id, $own);
 
@@ -72,6 +70,11 @@ class BookmarksNoticeStream extends ScopingNoticeStream
             $key = 'bookmark:ids_by_user:'.$user_id;
         }
 
-        parent::__construct(new CachingNoticeStream($stream, $key), $scoped);
+        if (is_int($profile) && $profile == -1) {
+            $profile = Profile::current();
+        }
+
+        parent::__construct(new CachingNoticeStream($stream, $key),
+                            $profile);
     }
 }

@@ -34,7 +34,7 @@ class TagAction extends ManagedAction
         $this->tag = common_canonical_tag($taginput);
 
         if (empty($this->tag)) {
-            throw new ClientException(_('No valid tag data.'));
+            common_redirect(common_local_url('publictagcloud'), 301);
         }
 
         // after common_canonical_tag we have a lowercase, no-specials tag string

@@ -43,14 +43,19 @@ if (!defined('GNUSOCIAL')) { exit(1); }
 
 class ProfileNoticeStream extends ScopingNoticeStream
 {
-    protected $target;
+    var $streamProfile;
+    var $userProfile;
 
-    function __construct(Profile $target, Profile $scoped=null)
+    function __construct($profile, $userProfile = -1)
     {
-        $this->target = $target;
-        parent::__construct(new CachingNoticeStream(new RawProfileNoticeStream($target),
-                                                    'profile:notice_ids:' . $target->getID()),
-                            $scoped);
+        if (is_int($userProfile) && $userProfile == -1) {
+            $userProfile = Profile::current();
+        }
+        $this->streamProfile = $profile;
+        $this->userProfile   = $userProfile;
+        parent::__construct(new CachingNoticeStream(new RawProfileNoticeStream($profile),
+                                                    'profile:notice_ids:' . $profile->id),
+                            $userProfile);
     }
 
     function getNoticeIds($offset, $limit, $since_id=null, $max_id=null)
@@ -65,7 +70,7 @@ class ProfileNoticeStream extends ScopingNoticeStream
     function getNotices($offset, $limit, $since_id=null, $max_id=null)
     {
         if ($this->impossibleStream()) {
-            throw new PrivateStreamException($this->target, $this->scoped);
+            throw new PrivateStreamException($this->streamProfile, $this->userProfile);
         } else {
             return parent::getNotices($offset, $limit, $since_id, $max_id);
         }
@@ -73,7 +78,7 @@ class ProfileNoticeStream extends ScopingNoticeStream
 
     function impossibleStream() 
     {
-        if (!$this->target->readableBy($this->scoped)) {
+        if (!$this->streamProfile->readableBy($this->userProfile)) {
             // cannot read because it's a private stream and either noone's logged in or they are not subscribers
             return true;
         }
@@ -81,13 +86,8 @@ class ProfileNoticeStream extends ScopingNoticeStream
         // If it's a spammy stream, and no user or not a moderator
 
         if (common_config('notice', 'hidespam')) {
-            // if this is a silenced user
-            if ($this->target->hasRole(Profile_role::SILENCED)
-                    // and we are either not logged in
-                    && (!$this->scoped instanceof Profile
-                        // or if we are, we are not logged in as the target, and we don't have right to review spam
-                        || (!$this->scoped->sameAs($this->target) && !$this->scoped->hasRight(Right::REVIEWSPAM))
-                    )) {
+            if ($this->streamProfile->hasRole(Profile_role::SILENCED) &&
+                (empty($this->userProfile) || (($this->userProfile->id !== $this->streamProfile->id) && !$this->userProfile->hasRight(Right::REVIEWSPAM)))) {
                 return true;
             }
         }
@@ -109,20 +109,20 @@ class ProfileNoticeStream extends ScopingNoticeStream
 
 class RawProfileNoticeStream extends NoticeStream
 {
-    protected $target;
+    protected $profile;
     protected $selectVerbs = array();   // select all verbs
 
-    function __construct(Profile $target)
+    function __construct($profile)
     {
         parent::__construct();
-        $this->target = $target;
+        $this->profile = $profile;
     }
 
     function getNoticeIds($offset, $limit, $since_id, $max_id)
     {
         $notice = new Notice();
 
-        $notice->profile_id = $this->target->getID();
+        $notice->profile_id = $this->profile->id;
 
         $notice->selectAdd();
         $notice->selectAdd('id');

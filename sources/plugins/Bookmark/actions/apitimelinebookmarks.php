@@ -57,7 +57,7 @@ class ApiTimelineBookmarksAction extends ApiBareAuthAction
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -82,9 +82,9 @@ class ApiTimelineBookmarksAction extends ApiBareAuthAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         $this->showTimeline();
     }
 

@@ -140,6 +140,16 @@ class User extends Managed_DataObject
         return $this->uri;
     }
 
+    static function getByUri($uri)
+    {
+        $user = new User();
+        $user->uri = $uri;
+        if (!$user->find(true)) {
+            throw new NoResultException($user);
+        }
+        return $user;
+    }
+
     public function getNickname()
     {
         return $this->getProfile()->getNickname();
@@ -180,7 +190,7 @@ class User extends Managed_DataObject
         return Sms_carrier::getKV('id', $this->carrier);
     }
 
-    function hasBlocked(Profile $other)
+    function hasBlocked($other)
     {
         return $this->getProfile()->hasBlocked($other);
     }
@@ -289,11 +299,6 @@ class User extends Managed_DataObject
                 // TRANS: Profile data could not be inserted for some reason.
                 throw new ServerException(_m('Could not insert profile data for new user.'));
             }
-            
-            // Necessary because id has been known to be reissued.
-            if ($profile->hasRole(Profile_role::DELETED)) {
-            	$profile->revokeRole(Profile_role::DELETED);
-            }
 
             $user->id = $id;
 
@@ -379,7 +384,8 @@ class User extends Managed_DataObject
 
             if (!empty($email) && empty($user->email)) {
                 try {
-                    $confirm->sendConfirmation();
+                    require_once(INSTALLDIR . '/lib/mail.php');
+                    mail_confirm_address($user, $confirm->code, $profile->getNickname(), $email);
                 } catch (EmailException $e) {
                     common_log(LOG_ERR, "Could not send user registration email for user id=={$profile->getID()}: {$e->getMessage()}");
                     if (!$accept_email_fail) {
@@ -698,18 +704,15 @@ class User extends Managed_DataObject
 
     function repeatedByMe($offset=0, $limit=20, $since_id=null, $max_id=null)
     {
-        // FIXME: Use another way to get Profile::current() since we
-        // want to avoid confusion between session user and queue processing.
-        $stream = new RepeatedByMeNoticeStream($this->getProfile(), Profile::current());
+        $stream = new RepeatedByMeNoticeStream($this);
         return $stream->getNotices($offset, $limit, $since_id, $max_id);
     }
 
 
     function repeatsOfMe($offset=0, $limit=20, $since_id=null, $max_id=null)
     {
-        // FIXME: Use another way to get Profile::current() since we
-        // want to avoid confusion between session user and queue processing.
-        $stream = new RepeatsOfMeNoticeStream($this->getProfile(), Profile::current());
+        $stream = new RepeatsOfMeNoticeStream($this);
+
         return $stream->getNotices($offset, $limit, $since_id, $max_id);
     }
 

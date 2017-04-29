@@ -27,7 +27,9 @@
  * @link      http://status.net/
  */
 
-if (!defined('GNUSOCIAL')) { exit(1); }
+if (!defined('STATUSNET') && !defined('LACONICA')) {
+    exit(1);
+}
 
 /**
  * Confirm an address
@@ -42,14 +44,25 @@ if (!defined('GNUSOCIAL')) { exit(1); }
  * @license  http://www.fsf.org/licensing/licenses/agpl-3.0.html GNU Affero General Public License version 3.0
  * @link     http://status.net/
  */
-class ConfirmaddressAction extends ManagedAction
+class ConfirmaddressAction extends Action
 {
     /** type of confirmation. */
 
-    protected $address;
+    var $address;
 
-    protected function doPreparation()
+    /**
+     * Accept a confirmation code
+     *
+     * Checks the code and confirms the address in the
+     * user record
+     *
+     * @param args $args $_REQUEST array
+     *
+     * @return void
+     */
+    function handle($args)
     {
+        parent::handle($args);
         if (!common_logged_in()) {
             common_set_returnto($this->selfUrl());
             common_redirect(common_local_url('login'));
@@ -57,45 +70,32 @@ class ConfirmaddressAction extends ManagedAction
         $code = $this->trimmed('code');
         if (!$code) {
             // TRANS: Client error displayed when not providing a confirmation code in the contact address confirmation action.
-            throw new ClientException(_('No confirmation code.'));
+            $this->clientError(_('No confirmation code.'));
         }
         $confirm = Confirm_address::getKV('code', $code);
-        if (!$confirm instanceof Confirm_address) {
+        if (!$confirm) {
             // TRANS: Client error displayed when providing a non-existing confirmation code in the contact address confirmation action.
-            throw new ClientException(_('Confirmation code not found.'), 404);
+            $this->clientError(_('Confirmation code not found.'));
         }
-
-        try {
-            $profile = Profile::getByID($confirm->user_id);
-        } catch (NoResultException $e) {
-            common_log(LOG_INFO, 'Tried to confirm the email for a deleted profile: '._ve(['id'=>$confirm->user_id, 'email'=>$confirm->address]));
-            $confirm->delete();
-            throw $e;
-        }
-        if (!$profile->sameAs($this->scoped)) {
+        $cur = common_current_user();
+        if ($cur->id != $confirm->user_id) {
             // TRANS: Client error displayed when not providing a confirmation code for another user in the contact address confirmation action.
-            throw new AuthorizationException(_('That confirmation code is not for you!'));
+            $this->clientError(_('That confirmation code is not for you!'));
         }
-
         $type = $confirm->address_type;
         $transports = array();
         Event::handle('GetImTransports', array(&$transports));
         if (!in_array($type, array('email', 'sms')) && !in_array($type, array_keys($transports))) {
             // TRANS: Server error for an unknown address type, which can be 'email', 'sms', or the name of an IM network (such as 'xmpp' or 'aim')
-            throw new ServerException(sprintf(_('Unrecognized address type %s'), $type));
+            $this->serverError(sprintf(_('Unrecognized address type %s'), $type));
         }
         $this->address = $confirm->address;
-
-        $cur = $this->scoped->getUser();
-
         $cur->query('BEGIN');
-        if (in_array($type, array('email', 'sms'))) {
-            common_debug("Confirming {$type} address for user {$this->scoped->getID()}");
+        if (in_array($type, array('email', 'sms')))
+        {
             if ($cur->$type == $confirm->address) {
-                // Already verified, so delete the confirm_address entry
-                $confirm->delete();
                 // TRANS: Client error for an already confirmed email/jabber/sms address.
-                throw new AlreadyFulfilledException(_('That address has already been confirmed.'));
+                $this->clientError(_('That address has already been confirmed.'));
             }
 
             $orig_user = clone($cur);
@@ -122,18 +122,16 @@ class ConfirmaddressAction extends ManagedAction
             $user_im_prefs->user_id = $cur->id;
             if ($user_im_prefs->find() && $user_im_prefs->fetch()) {
                 if($user_im_prefs->screenname == $confirm->address){
-                    // Already verified, so delete the confirm_address entry
-                    $confirm->delete();
                     // TRANS: Client error for an already confirmed IM address.
-                    throw new AlreadyFulfilledException(_('That address has already been confirmed.'));
+                    $this->clientError(_('That address has already been confirmed.'));
                 }
                 $user_im_prefs->screenname = $confirm->address;
                 $result = $user_im_prefs->update();
 
-                if ($result === false) {
+                if (!$result) {
                     common_log_db_error($user_im_prefs, 'UPDATE', __FILE__);
                     // TRANS: Server error displayed when updating IM preferences fails.
-                    throw new ServerException(_('Could not update user IM preferences.'));
+                    $this->serverError(_('Could not update user IM preferences.'));
                 }
             }else{
                 $user_im_prefs = new User_im_prefs();
@@ -142,18 +140,26 @@ class ConfirmaddressAction extends ManagedAction
                 $user_im_prefs->user_id = $cur->id;
                 $result = $user_im_prefs->insert();
 
-                if ($result === false) {
+                if (!$result) {
                     common_log_db_error($user_im_prefs, 'INSERT', __FILE__);
                     // TRANS: Server error displayed when adding IM preferences fails.
-                    throw new ServerException(_('Could not insert user IM preferences.'));
+                    $this->serverError(_('Could not insert user IM preferences.'));
                 }
             }
 
         }
 
-        $confirm->delete();
+        $result = $confirm->delete();
+
+        if (!$result) {
+            common_log_db_error($confirm, 'DELETE', __FILE__);
+            // TRANS: Server error displayed when an address confirmation code deletion from the
+            // TRANS: database fails in the contact address confirmation action.
+            $this->serverError(_('Could not delete address confirmation.'));
+        }
 
         $cur->query('COMMIT');
+        $this->showPage();
     }
 
     /**
@@ -174,6 +180,8 @@ class ConfirmaddressAction extends ManagedAction
      */
     function showContent()
     {
+        $cur  = common_current_user();
+
         $this->element('p', null,
                        // TRANS: Success message for the contact address confirmation action.
                        // TRANS: %s can be 'email', 'jabber', or 'sms'.

@@ -55,7 +55,7 @@ abstract class ProfileAction extends ManagedAction
         $nickname     = common_canonical_nickname($nickname_arg);
 
         // Permanent redirect on non-canonical nickname
-        if ($nickname_arg !== $nickname) {
+        if ($nickname_arg != $nickname) {
             $args = array('nickname' => $nickname);
             if ($this->arg('page') && $this->arg('page') != 1) {
                 $args['page'] = $this->arg['page'];
@@ -83,7 +83,7 @@ abstract class ProfileAction extends ManagedAction
         // this will call ->doPreparation() which child classes use to set $this->target
         parent::prepare($args);
 
-        if ($this->target->isPerson() && $this->target->hasRole(Profile_role::SILENCED)
+        if ($this->target->hasRole(Profile_role::SILENCED)
                 && (!$this->scoped instanceof Profile || !$this->scoped->hasRight(Right::SILENCEUSER))) {
             throw new ClientException(_('This profile has been silenced by site moderators'), 403);
         }

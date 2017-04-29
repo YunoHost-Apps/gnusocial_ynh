@@ -59,7 +59,7 @@ class ApiTimelineRetweetsOfMeAction extends ApiAuthAction
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -83,9 +83,9 @@ class ApiTimelineRetweetsOfMeAction extends ApiAuthAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         $offset = ($this->page-1) * $this->cnt;
         $limit  = $this->cnt;

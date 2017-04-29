@@ -45,7 +45,7 @@ class ProfiletagbyidAction extends Action
         return true;
     }
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -83,7 +83,7 @@ class ProfiletagbyidAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
         common_redirect($this->peopletag->homeUrl(), 303);
     }

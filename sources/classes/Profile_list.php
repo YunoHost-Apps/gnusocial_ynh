@@ -171,9 +171,7 @@ class Profile_list extends Managed_DataObject
 
     function getNotices($offset, $limit, $since_id=null, $max_id=null)
     {
-        // FIXME: Use something else than Profile::current() to avoid
-        // possible confusion between session user and queue processing.
-        $stream = new PeopletagNoticeStream($this, Profile::current());
+        $stream = new PeopletagNoticeStream($this);
 
         return $stream->getNotices($offset, $limit, $since_id, $max_id);
     }

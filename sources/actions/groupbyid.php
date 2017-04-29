@@ -42,7 +42,7 @@ if (!defined('GNUSOCIAL')) { exit(1); }
  * @license  http://www.fsf.org/licensing/licenses/agpl-3.0.html GNU Affero General Public License version 3.0
  * @link     http://status.net/
  */
-class GroupbyidAction extends ShowgroupAction
+class GroupbyidAction extends ManagedAction
 {
     /** group we're viewing. */
     protected $group = null;
@@ -55,10 +55,10 @@ class GroupbyidAction extends ShowgroupAction
     protected function doPreparation()
     {
         $this->group = User_group::getByID($this->arg('id'));
-        $this->target = $this->group->getProfile();
+    }
 
-        if ($this->target->isLocal()) {
-            common_redirect($this->target->getUrl());
-        }
+    public function showPage()
+    {
+        common_redirect($this->group->homeUrl(), 303);
     }
 }

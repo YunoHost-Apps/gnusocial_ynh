@@ -55,9 +55,9 @@ class NudgeAction extends Action
      *
      * @return nothing
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         if (!common_logged_in()) {
             // TRANS: Error message displayed when trying to perform an action that requires a logged in user.

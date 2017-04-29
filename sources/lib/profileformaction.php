@@ -51,7 +51,7 @@ class ProfileFormAction extends RedirectingAction
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -96,9 +96,9 @@ class ProfileFormAction extends RedirectingAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             try {

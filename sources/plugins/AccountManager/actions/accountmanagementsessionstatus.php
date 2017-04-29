@@ -49,9 +49,9 @@ class AccountManagementSessionStatusAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         $cur = common_current_user();
         if(empty($cur)) {

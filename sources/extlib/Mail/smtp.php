@@ -2,7 +2,7 @@
 /**
  * SMTP implementation of the PEAR Mail interface. Requires the Net_SMTP class.
  *
- * PHP version 5
+ * PHP versions 4 and 5
  *
  * LICENSE:
  *
@@ -40,7 +40,7 @@
  * @author      Chuck Hagenbuch <chuck@horde.org>
  * @copyright   2010 Chuck Hagenbuch
  * @license     http://opensource.org/licenses/bsd-license.php New BSD License
- * @version     CVS: $Id$
+ * @version     CVS: $Id: smtp.php 294747 2010-02-08 08:18:33Z clockwerx $
  * @link        http://pear.php.net/package/Mail/
  */
 
@@ -69,7 +69,7 @@ define('PEAR_MAIL_SMTP_ERROR_DATA', 10006);
  * SMTP implementation of the PEAR Mail interface. Requires the Net_SMTP class.
  * @access public
  * @package Mail
- * @version $Revision$
+ * @version $Revision: 294747 $
  */
 class Mail_smtp extends Mail {
 
@@ -162,8 +162,6 @@ class Mail_smtp extends Mail {
      * @var bool
      */
     var $pipelining;
-    
-    var $socket_options = array();
 
     /**
      * Constructor.
@@ -188,8 +186,9 @@ class Mail_smtp extends Mail {
      *
      * @param array Hash containing any parameters different from the
      *              defaults.
+     * @access public
      */
-    public function __construct($params)
+    function Mail_smtp($params)
     {
         if (isset($params['host'])) $this->host = $params['host'];
         if (isset($params['port'])) $this->port = $params['port'];
@@ -201,18 +200,20 @@ class Mail_smtp extends Mail {
         if (isset($params['debug'])) $this->debug = (bool)$params['debug'];
         if (isset($params['persist'])) $this->persist = (bool)$params['persist'];
         if (isset($params['pipelining'])) $this->pipelining = (bool)$params['pipelining'];
-        if (isset($params['socket_options'])) $this->socket_options = $params['socket_options'];
+
         // Deprecated options
         if (isset($params['verp'])) {
             $this->addServiceExtensionParameter('XVERP', is_bool($params['verp']) ? null : $params['verp']);
         }
+
+        register_shutdown_function(array(&$this, '_Mail_smtp'));
     }
 
     /**
      * Destructor implementation to ensure that we disconnect from any
      * potentially-alive persistent SMTP connections.
      */
-    public function __destruct()
+    function _Mail_smtp()
     {
         $this->disconnect();
     }
@@ -239,11 +240,12 @@ class Mail_smtp extends Mail {
      * @return mixed Returns true on success, or a PEAR_Error
      *               containing a descriptive error message on
      *               failure.
+     * @access public
      */
-    public function send($recipients, $headers, $body)
+    function send($recipients, $headers, $body)
     {
         /* If we don't already have an SMTP object, create one. */
-        $result = $this->getSMTPObject();
+        $result = &$this->getSMTPObject();
         if (PEAR::isError($result)) {
             return $result;
         }
@@ -302,7 +304,7 @@ class Mail_smtp extends Mail {
         }
 
         /* Send the message's headers and the body as SMTP data. */
-        $res = $this->_smtp->data($body, $textHeaders);
+        $res = $this->_smtp->data($textHeaders . "\r\n\r\n" . $body);
 		list(,$args) = $this->_smtp->getResponse();
 
 		if (preg_match("/Ok: queued as (.*)/", $args, $queued)) {
@@ -335,20 +337,18 @@ class Mail_smtp extends Mail {
      *               failure.
      *
      * @since  1.2.0
+     * @access public
      */
-    public function getSMTPObject()
+    function &getSMTPObject()
     {
         if (is_object($this->_smtp) !== false) {
             return $this->_smtp;
         }
 
         include_once 'Net/SMTP.php';
-        $this->_smtp = new Net_SMTP($this->host,
+        $this->_smtp = &new Net_SMTP($this->host,
                                      $this->port,
-                                     $this->localhost,
-                                     $this->pipelining,
-                                     0,
-                                     $this->socket_options);
+                                     $this->localhost);
 
         /* If we still don't have an SMTP object at this point, fail. */
         if (is_object($this->_smtp) === false) {
@@ -393,8 +393,9 @@ class Mail_smtp extends Mail {
      * @param string Any value the keyword needs.
      *
      * @since 1.2.0
+     * @access public
      */
-    public function addServiceExtensionParameter($keyword, $value = null)
+    function addServiceExtensionParameter($keyword, $value = null)
     {
         $this->_extparams[$keyword] = $value;
     }
@@ -405,8 +406,9 @@ class Mail_smtp extends Mail {
      * @return boolean True if the SMTP connection no longer exists.
      *
      * @since  1.1.9
+     * @access public
      */
-    public function disconnect()
+    function disconnect()
     {
         /* If we have an SMTP object, disconnect and destroy it. */
         if (is_object($this->_smtp) && $this->_smtp->disconnect()) {
@@ -426,8 +428,9 @@ class Mail_smtp extends Mail {
      * @return string       A string describing the current SMTP error.
      *
      * @since  1.1.7
+     * @access private
      */
-    protected function _error($text, $error)
+    function _error($text, &$error)
     {
         /* Split the SMTP response into a code and a response string. */
         list($code, $response) = $this->_smtp->getResponse();

@@ -35,7 +35,7 @@ class ExtendedProfilePlugin extends Plugin
             'name' => 'ExtendedProfile',
             'version' => GNUSOCIAL_VERSION,
             'author' => 'Brion Vibber, Samantha Doherty, Zach Copley',
-            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/ExtendedProfile',
+            'homepage' => 'http://status.net/wiki/Plugin:ExtendedProfile',
             // TRANS: Plugin description.
             'rawdescription' => _m('UI extensions for additional profile fields.')
         );

@@ -37,11 +37,7 @@ try {
 
 while ($sub->fetch()) {
     echo "Renewing feed subscription\n\tExp.: {$sub->sub_end}\n\tFeed: {$sub->uri}\n\tHub:  {$sub->huburi}\n";
-    try {
-        $sub->renew();
-    } catch (Exception $e) {
-        echo "FAILED: {$e->getMessage()}\n";
-    }
+    $sub->renew();
 }
 
 echo "Done!";

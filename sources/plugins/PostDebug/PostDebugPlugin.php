@@ -53,7 +53,7 @@ class PostDebugPlugin extends Plugin
         $versions[] = array('name' => 'PostDebug',
                             'version' => GNUSOCIAL_VERSION,
                             'author' => 'Brion Vibber',
-                            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/PostDebug',
+                            'homepage' => 'http://status.net/wiki/Plugin:PostDebug',
                             'rawdescription' =>
                             // TRANS: Plugin description.
                             _m('Debugging tool to record request details on POST.'));

@@ -5,9 +5,4 @@ nickname and the provided password is checked.
 
 Installation
 ============
-This plugin is enabled by default
-
-Settings
-========
-none
-
+add "addPlugin('emailAuthentication');" to the bottom of your config.php.

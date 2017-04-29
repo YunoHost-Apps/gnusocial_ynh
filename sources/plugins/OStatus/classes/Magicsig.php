@@ -27,7 +27,11 @@
  * @link      http://status.net/
  */
 
-if (!defined('GNUSOCIAL')) { exit(1); }
+if (!defined('STATUSNET')) {
+    exit(1);
+}
+
+require_once 'Crypt/RSA.php';
 
 class Magicsig extends Managed_DataObject
 {
@@ -48,7 +52,7 @@ class Magicsig extends Managed_DataObject
     /**
      * Flattened string representation of the key pair; callers should
      * usually use $this->publicKey and $this->privateKey directly,
-     * which hold live \phpseclib\Crypt\RSA key objects.
+     * which hold live Crypt_RSA key objects.
      *
      * @var string
      */
@@ -64,14 +68,14 @@ class Magicsig extends Managed_DataObject
     /**
      * Public RSA key; gets serialized in/out via $this->keypair string.
      *
-     * @var \phpseclib\Crypt\RSA
+     * @var Crypt_RSA
      */
     public $publicKey;
 
     /**
      * PrivateRSA key; gets serialized in/out via $this->keypair string.
      *
-     * @var \phpseclib\Crypt\RSA
+     * @var Crypt_RSA
      */
     public $privateKey;
 
@@ -91,7 +95,7 @@ class Magicsig extends Managed_DataObject
     {
         $obj =  parent::getKV($k, $v);
         if ($obj instanceof Magicsig) {
-            $obj->importKeys(); // Loads \phpseclib\Crypt\RSA objects etc.
+            $obj->importKeys(); // Loads Crypt_RSA objects etc.
 
             // Throw out a big fat warning for keys of less than 1024 bits. (
             // The only case these show up in would be imported or
@@ -152,15 +156,15 @@ class Magicsig extends Managed_DataObject
         $magicsig = new Magicsig($alg);
         $magicsig->user_id = $user->id;
 
-        $rsa = new \phpseclib\Crypt\RSA();
+        $rsa = new Crypt_RSA();
 
         $keypair = $rsa->createKey($bits);
 
-        $magicsig->privateKey = new \phpseclib\Crypt\RSA();
-        $magicsig->privateKey->load($keypair['privatekey']);
+        $magicsig->privateKey = new Crypt_RSA();
+        $magicsig->privateKey->loadKey($keypair['privatekey']);
 
-        $magicsig->publicKey = new \phpseclib\Crypt\RSA();
-        $magicsig->publicKey->load($keypair['publickey']);
+        $magicsig->publicKey = new Crypt_RSA();
+        $magicsig->publicKey->loadKey($keypair['publickey']);
 
         $magicsig->insert();        // will do $this->keypair = $this->toString(true);
         $magicsig->importKeys();    // seems it's necessary to re-read keys from text keypair
@@ -181,7 +185,7 @@ class Magicsig extends Managed_DataObject
         $exp = call_user_func($base64_func, $this->publicKey->exponent->toBytes());
 
         $private_exp = '';
-        if ($full_pair && $this->privateKey instanceof \phpseclib\Crypt\RSA && $this->privateKey->exponent->toBytes()) {
+        if ($full_pair && $this->privateKey instanceof Crypt_RSA && $this->privateKey->exponent->toBytes()) {
             $private_exp = '.' . call_user_func($base64_func, $this->privateKey->exponent->toBytes());
         }
 
@@ -199,15 +203,15 @@ class Magicsig extends Managed_DataObject
         return strtolower(hash('sha256', $this->toString(false, false)));
     }
 
-    public function exportPublicKey($type='PKCS1')
+    public function exportPublicKey($format=CRYPT_RSA_PUBLIC_FORMAT_PKCS1)
     {
         $this->publicKey->setPublicKey();
-        return $this->publicKey->getPublicKey($type);
+        return $this->publicKey->getPublicKey($format);
     }
 
     /**
      * importKeys will load the object's keypair string, which initiates
-     * loadKey() and configures \phpseclib\Crypt\RSA objects.
+     * loadKey() and configures Crypt_RSA objects.
      *
      * @param string $keypair optional, otherwise the object's "keypair" property will be used
      */
@@ -236,7 +240,7 @@ class Magicsig extends Managed_DataObject
     }
 
     /**
-     * Fill out $this->privateKey or $this->publicKey with a \phpseclib\Crypt\RSA object
+     * Fill out $this->privateKey or $this->publicKey with a Crypt_RSA object
      * representing the give key (as mod/exponent pair).
      *
      * @param string $mod base64url-encoded
@@ -245,11 +249,12 @@ class Magicsig extends Managed_DataObject
      */
     public function loadKey($mod, $exp, $type = 'public')
     {
-        $rsa = new \phpseclib\Crypt\RSA();
+        $rsa = new Crypt_RSA();
+        $rsa->setSignatureMode(CRYPT_RSA_SIGNATURE_PKCS1);
         $rsa->setHash($this->getHash());
-        $rsa->modulus = new \phpseclib\Math\BigInteger(Magicsig::base64_url_decode($mod), 256);
+        $rsa->modulus = new Math_BigInteger(Magicsig::base64_url_decode($mod), 256);
         $rsa->k = strlen($rsa->modulus->toBytes());
-        $rsa->exponent = new \phpseclib\Math\BigInteger(Magicsig::base64_url_decode($exp), 256);
+        $rsa->exponent = new Math_BigInteger(Magicsig::base64_url_decode($exp), 256);
 
         if ($type == 'private') {
             $this->privateKey = $rsa;
@@ -260,8 +265,8 @@ class Magicsig extends Managed_DataObject
 
     public function loadPublicKeyPKCS1($key)
     {
-        $rsa = new \phpseclib\Crypt\RSA();
-        if (!$rsa->setPublicKey($key, 'PKCS1')) {
+        $rsa = new Crypt_RSA();
+        if (!$rsa->setPublicKey($key, CRYPT_RSA_PUBLIC_FORMAT_PKCS1)) {
             throw new ServerException('Could not load PKCS1 public key. We probably got this from a remote Diaspora node as the profile public key.');
         }
         $this->publicKey = $rsa;
@@ -300,7 +305,7 @@ class Magicsig extends Managed_DataObject
      */
     public function sign($bytes)
     {
-        $sig = $this->privateKey->sign($bytes, \phpseclib\Crypt\RSA::PADDING_PKCS1);
+        $sig = $this->privateKey->sign($bytes);
         if ($sig === false) {
             throw new ServerException('Could not sign data');
         }
@@ -316,7 +321,7 @@ class Magicsig extends Managed_DataObject
     public function verify($signed_bytes, $signature)
     {
         $signature = self::base64_url_decode($signature);
-        return $this->publicKey->verify($signed_bytes, $signature, \phpseclib\Crypt\RSA::PADDING_PKCS1);
+        return $this->publicKey->verify($signed_bytes, $signature);
     }
 
     /**

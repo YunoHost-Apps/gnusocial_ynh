@@ -394,18 +394,6 @@ function buildProfileCard(data) {
 	if(isUserMuted(data.id)) {
 		is_muted = ' user-muted';
 		}
-	// local or remote user?
-	var local_or_remote = '';
-	var remote_user_info = '';
-	var serverUrl = guessInstanceUrlWithoutProtocolFromProfileUrlAndNickname(data.statusnet_profile_url, data.screen_name);
-	data.screenNameWithServer = '@' + data.screen_name + '@' + serverUrl;
-	if(data.is_local !== true) {
-		remote_user_info = '<div class="remote-user-info">' + window.sL.thisIsARemoteUser.replace('{remote-profile-url}',data.statusnet_profile_url) + '</div>'
-		local_or_remote = ' remote-user';
-		}
-	else {
-		local_or_remote = ' local-user';
-	}
 
 	var followButton = '';
 
@@ -432,9 +420,8 @@ function buildProfileCard(data) {
 
 	// full card html
 	var profileCardHtml = '\
-		<div class="profile-card' + is_me + logged_in + is_muted + local_or_remote + '">\
+		<div class="profile-card' + is_me + logged_in + is_muted + '">\
 			<script class="profile-json" type="application/json">' + JSON.stringify(data) + '</script>\
-			<a href="' + data.statusnet_profile_url + '" class="ostatus-link" data-tooltip="' + window.sL.goToTheUsersRemoteProfile + '" donthijack></a>\
 			<div class="profile-header-inner' + is_silenced + is_sandboxed + '" style="' + coverPhotoHtml + '" data-user-id="' + data.id + '" data-screen-name="' + data.screen_name + '">\
 				<div class="profile-header-inner-overlay"></div>\
 				<a class="profile-picture" href="' + data.profile_image_url_original + '">\
@@ -445,7 +432,6 @@ function buildProfileCard(data) {
 					<span class="silenced-flag" data-tooltip="' + window.sL.silencedStreamDescription + '">' + window.sL.silenced + '</span>\
 					<span class="sandboxed-flag" data-tooltip="' + window.sL.sandboxedStreamDescription + '">' + window.sL.sandboxed + '</span>\
 					<h2 class="username">\
-						<span class="screen-name-with-server" data-user-id="' + data.id + '">' + data.screenNameWithServer + '</span>\
 						<span class="screen-name" data-user-id="' + data.id + '">@' + data.screen_name + '</span>\
 						' + follows_you + '\
 					</h2>\
@@ -460,7 +446,6 @@ function buildProfileCard(data) {
 				</div>\
 			</div>\
 			<div class="profile-banner-footer">\
-				' + remote_user_info + '\
 				<ul class="stats">\
 					<li class="tweet-num"><a href="' + data.statusnet_profile_url + '" class="tweet-stats">' + window.sL.notices + '<strong>' + data.statuses_count + '</strong></a></li>\
 					<li class="following-num"><a href="' + data.statusnet_profile_url + '/subscriptions" class="following-stats">' + window.sL.following + '<strong>' + data.friends_count + '</strong></a></li>\
@@ -488,6 +473,7 @@ function buildProfileCard(data) {
    · · · · · · · · · */
 
 function buildExternalProfileCard(data) {
+
 	// follows me?
 	var follows_you = '';
 	if(data.local !== null && data.local.follows_you === true  && window.loggedIn.id != data.local.id) {
@@ -496,7 +482,7 @@ function buildExternalProfileCard(data) {
 
 	// follow button
 	var followButton = '';
-	if(window.loggedIn !== false && typeof data.local != 'undefined' && data.local) {
+	if(window.loggedIn !== false && typeof data.local != 'undefined' && data.local !== null) {
 		var followButton = buildFollowBlockbutton(data.local);
 		}
 
@@ -578,7 +564,7 @@ function buildExternalProfileCard(data) {
 						<span class="sandboxed-flag" data-tooltip="' + window.sL.sandboxedStreamDescription + '">' + window.sL.sandboxed + '</span>\
 						<h2 class="username">\
 							<span class="screen-name">' + data.screenNameWithServer + '</span>\
-							<span class="ostatus-link" data-tooltip="' + window.sL.goToTheUsersRemoteProfile + '" donthijack>' + window.sL.goToTheUsersRemoteProfile + '</span>\
+							<span class="ostatus-link" data-tooltip="' + window.sL.goToTheUsersRemoteProfile + '">' + window.sL.goToTheUsersRemoteProfile + '</span>\
 							' + follows_you + '\
 						</h2>\
 					</a>\
@@ -822,7 +808,7 @@ function setNewCurrentStream(streamObject,setLocation,fallbackId,actionOnSuccess
 
 		// discard and remove any cached data that is not in this (new) format
 		if(typeof haveOldStreamState.card == 'undefined'
-		|| typeof haveOldStreamState.feed == 'undefined') {
+		|| typeof haveOldStreamState.feed == 'undefined') {
 			localStorageObjectCache_STORE('streamState',window.currentStreamObject.path, false);
 			haveOldStreamState = false;
 			}
@@ -959,13 +945,6 @@ function setNewCurrentStream(streamObject,setLocation,fallbackId,actionOnSuccess
 				}
 			}
 
-		// local for local users requested by id, we want to go to the nickname-url instead
-		else if(streamObject.name == 'profile by id' && userArray && userArray.is_local === true) {
-			removeHistoryContainerItemByHref(window.siteInstanceURL + 'user/' + userArray.id);
-			setNewCurrentStream(pathToStreamRouter('/' + userArray.screen_name),true,false,actionOnSuccess);
-
-		}
-
 		// getting stream failed, and we don't have a fallback id
 		else if(queet_data === false) {
 
@@ -979,7 +958,7 @@ function setNewCurrentStream(streamObject,setLocation,fallbackId,actionOnSuccess
 				}
 			else if(error.status == 404) {
 				if(streamObject.name == 'profile'
-				|| streamObject.name == 'friends timeline'
+				|| streamObject.name == 'friends timeline'
 				|| streamObject.name == 'mentions'
 				|| streamObject.name == 'favorites'
 				|| streamObject.name == 'subscribers'
@@ -988,13 +967,13 @@ function setNewCurrentStream(streamObject,setLocation,fallbackId,actionOnSuccess
 					showErrorMessage(window.sL.ERRORcouldNotFindUserWithNickname.replace('{nickname}',replaceHtmlSpecialChars(streamObject.nickname)));
 					}
 				else if(streamObject.name == 'group notice stream'
-					 || streamObject.name == 'group member list'
-				 	 || streamObject.name == 'group admin list') {
+					 || streamObject.name == 'group member list'
+				 	 || streamObject.name == 'group admin list') {
 					showErrorMessage(window.sL.ERRORcouldNotFindGroupWithNickname.replace('{nickname}',replaceHtmlSpecialChars(streamObject.nickname)));
 					}
 				else if(streamObject.name == 'list notice stream'
-					 || streamObject.name == 'list members'
-					 || streamObject.name == 'list subscribers') {
+					 || streamObject.name == 'list members'
+					 || streamObject.name == 'list subscribers') {
 					showErrorMessage(window.sL.ERRORcouldNotFindList);
 					}
 				else {
@@ -1020,6 +999,7 @@ function setNewCurrentStream(streamObject,setLocation,fallbackId,actionOnSuccess
 				showErrorMessage(window.sL.ERRORsomethingWentWrong + '<br><br>\
 								  url: ' + url + '<br><br>\
 								  jQuery ajax() error:<pre><code>' + replaceHtmlSpecialChars(JSON.stringify(error, null, ' ')) + '</code></pre>\
+								  streamObject:<pre><code>' + replaceHtmlSpecialChars(JSON.stringify(streamObject, null, ' ')) + '</code></pre>\
 								  ');
 				}
 
@@ -1035,25 +1015,9 @@ function setNewCurrentStream(streamObject,setLocation,fallbackId,actionOnSuccess
 				setUrlFromStream(streamObject);
 				}
 
-			// add this stream to the history menu
-			addStreamToHistoryMenuAndMarkAsCurrent(streamObject);
-
 			// profile card from user array
 			if(userArray) {
 				addProfileCardToDOM(buildProfileCard(userArray));
-
-				// set remote users username in the browsing history container
-				// (because stream-router can't know username from the URL, that only have id:s)
-				if(userArray.is_local !== true) {
-					var serverUrl = guessInstanceUrlWithoutProtocolFromProfileUrlAndNickname(userArray.statusnet_profile_url, userArray.screen_name);
-					var screenNameWithServer = '@' + userArray.screen_name + '@' + serverUrl;
-					updateHistoryContainerItemByHref(window.siteInstanceURL + 'user/' + userArray.id, screenNameWithServer);
-					updateHistoryContainerItemByHref(userArray.statusnet_profile_url, screenNameWithServer);
-					}
-				// if we for some reason have visited a local user's profile by id, adjust the history container
-				else {
-					updateHistoryContainerItemByHref(window.siteInstanceURL + 'user/' + userArray.id, userArray.screen_name);
-					}
 				}
 			// remove any trailing profile cards
 			else {
@@ -1076,6 +1040,9 @@ function setNewCurrentStream(streamObject,setLocation,fallbackId,actionOnSuccess
 			// start checking for new queets again
 			window.clearInterval(checkForNewQueetsInterval);
 			checkForNewQueetsInterval=window.setInterval(function(){checkForNewQueets()},window.timeBetweenPolling);
+
+			// add this stream to the history menu
+			addStreamToHistoryMenuAndMarkAsCurrent(streamObject);
 
 			remove_spinner();
 
@@ -1331,22 +1298,12 @@ function expand_queet(q,doScrolling) {
 				}
 
 			// if there's only one thumb and it's a youtube video, show it inline
-			if(q.children('.queet').find('.queet-thumbs.thumb-num-1').children('.thumb-container.play-button.host-youtube-com').length == 1) {
-				var youtubeURL = q.children('.queet').find('.queet-thumbs.thumb-num-1').children('.thumb-container.play-button.host-youtube-com').children('.attachment-thumb').attr('data-full-image-url');
+			if(q.children('.queet').find('.queet-thumbs.thumb-num-1').children('.thumb-container.play-button.youtube').length == 1) {
+				var youtubeURL = q.children('.queet').find('.queet-thumbs.thumb-num-1').children('.thumb-container.play-button.youtube').children('.attachment-thumb').attr('data-full-image-url');
 				if(q.children('.queet').find('.expanded-content').children('.media').children('iframe[src="' + youTubeEmbedLinkFromURL(youtubeURL) + '"]').length < 1) { // not if already showed
 					q.children('.queet').find('.queet-thumbs').addClass('hide-thumbs');
 					// show video
 					q.children('.queet').find('.expanded-content').prepend('<div class="media"><iframe width="510" height="315" src="' + youTubeEmbedLinkFromURL(youtubeURL) + '" frameborder="0" allowfullscreen></iframe></div>');
-					}
-				}
-			// if there's only one thumb and it's a vimeo video, show it inline
-			else if(q.children('.queet').find('.queet-thumbs.thumb-num-1').children('.thumb-container.play-button.host-vimeo-com').length == 1) {
-				var vimeoURL = q.children('.queet').find('.queet-thumbs.thumb-num-1').children('.thumb-container.play-button.host-vimeo-com').children('.attachment-thumb').attr('data-full-image-url');
-				var embedURL = vimeoEmbedLinkFromURL(vimeoURL);
-				if(q.children('.queet').find('.expanded-content').children('.media').children('iframe[src="' + embedURL + '"]').length < 1) { // not if already showed
-					q.children('.queet').find('.queet-thumbs').addClass('hide-thumbs');
-					// show video
-					q.children('.queet').find('.expanded-content').prepend('<iframe src="' + embedURL + '" width="510" height="315" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe>');
 					}
 				}
 
@@ -1464,7 +1421,7 @@ function queetBoxPopUpHtml() {
 		}
 
 	var startText = encodeURIComponent(window.sL.compose);
-	return '<div class="inline-reply-queetbox"><div id="pop-up-queet-box" class="queet-box queet-box-syntax" data-start-text="' + startText + '" data-cached-text="' + cachedText + '">' + decodeURIComponent(startText) + '</div><div class="syntax-middle"></div><div class="syntax-two" contenteditable="true"></div><div class="mentions-suggestions"></div><div class="queet-toolbar toolbar-reply"><div class="queet-box-extras"><button data-tooltip="' + window.sL.tooltipAttachFile + '" class="upload-image"></button><button data-tooltip="' + window.sL.tooltipShortenUrls + '" class="shorten disabled">URL</button></div><div class="queet-button"><span class="queet-counter"></span><button>' + window.sL.queetVerb + '</button></div></div></div>';
+	return '<div class="inline-reply-queetbox"><div id="pop-up-queet-box" class="queet-box queet-box-syntax" data-start-text="' + startText + '" data-cached-text="' + cachedText + '">' + decodeURIComponent(startText) + '</div><div class="syntax-middle"></div><div class="syntax-two" contenteditable="true"></div><div class="mentions-suggestions"></div><div class="queet-toolbar toolbar-reply"><div class="queet-box-extras"><button data-tooltip="' + window.sL.tooltipAttachImage + '" class="upload-image"></button><button data-tooltip="' + window.sL.tooltipShortenUrls + '" class="shorten disabled">URL</button></div><div class="queet-button"><span class="queet-counter"></span><button>' + window.sL.queetVerb + '</button></div></div></div>';
 	}
 
 
@@ -1528,7 +1485,7 @@ function replyFormHtml(streamItem,qid) {
 	var repliesText = '';
 	if(Object.keys(screenNamesToAdd).length < 1
 	&& q.find('strong.name').attr('data-user-id') == window.loggedIn.id) {
-		if(streamItem.attr('data-in-reply-to-status-id') == 'null' || streamItem.attr('data-in-reply-to-status-id') == 'false' || streamItem.attr('data-in-reply-to-status-id') == 'undefined' || streamItem.attr('data-in-reply-to-status-id') == '') {
+		if(streamItem.attr('data-in-reply-to-status-id') == 'null' || streamItem.attr('data-in-reply-to-status-id') == 'false' || streamItem.attr('data-in-reply-to-status-id') == 'undefined' || streamItem.attr('data-in-reply-to-status-id') == '') {
 			var startText = window.sL.startRant + ' ';
 			}
 		else {
@@ -1549,7 +1506,7 @@ function replyFormHtml(streamItem,qid) {
 
 	startText = encodeURIComponent(startText);
 	repliesText = encodeURIComponent(repliesText);
-	return '<div class="inline-reply-queetbox"><span class="inline-reply-caret"><span class="caret-inner"></span></span><img class="reply-avatar" src="' + $('#user-avatar').attr('src') + '" /><div class="queet-box queet-box-syntax" id="queet-box-' + qid + '" data-start-text="' + startText + '" data-replies-text="' + repliesText + '" data-cached-text="' + cachedText + '">' + decodeURIComponent(startText) + '</div><div class="syntax-middle"></div><div class="syntax-two" contenteditable="true"></div><div class="mentions-suggestions"></div><div class="queet-toolbar toolbar-reply"><div class="queet-box-extras"><button data-tooltip="' + window.sL.tooltipAttachFile + '" class="upload-image"></button><button data-tooltip="' + window.sL.tooltipShortenUrls + '" class="shorten disabled">URL</button></div><div class="queet-button"><span class="queet-counter"></span><button>' + window.sL.queetVerb + '</button></div></div></div>';
+	return '<div class="inline-reply-queetbox"><span class="inline-reply-caret"><span class="caret-inner"></span></span><img class="reply-avatar" src="' + $('#user-avatar').attr('src') + '" /><div class="queet-box queet-box-syntax" id="queet-box-' + qid + '" data-start-text="' + startText + '" data-replies-text="' + repliesText + '" data-cached-text="' + cachedText + '">' + decodeURIComponent(startText) + '</div><div class="syntax-middle"></div><div class="syntax-two" contenteditable="true"></div><div class="mentions-suggestions"></div><div class="queet-toolbar toolbar-reply"><div class="queet-box-extras"><button data-tooltip="' + window.sL.tooltipAttachImage + '" class="upload-image"></button><button data-tooltip="' + window.sL.tooltipShortenUrls + '" class="shorten disabled">URL</button></div><div class="queet-button"><span class="queet-counter"></span><button>' + window.sL.queetVerb + '</button></div></div></div>';
 	}
 
 
@@ -1815,7 +1772,7 @@ function addToFeed(feed, after, extraClasses) {
 				// external
 				var ostatusHtml = '';
 				if(obj.from_profile.is_local === false) {
-					ostatusHtml = '<a target="_blank" data-tooltip="' + window.sL.goToOriginalNotice + '" class="ostatus-link" href="' + obj.from_profile.statusnet_profile_url + '" donthijack></a>';
+					ostatusHtml = '<a target="_blank" data-tooltip="' + window.sL.goToOriginalNotice + '" class="ostatus-link" href="' + obj.from_profile.statusnet_profile_url + '"></a>';
 					}
 
 				if(obj.ntype == 'like') {
@@ -2061,7 +2018,7 @@ function buildUserStreamItemHtml(obj) {
 	// external
 	var ostatusHtml = '';
 	if(obj.is_local === false) {
-		ostatusHtml = '<a target="_blank" title="' + window.sL.goToTheUsersRemoteProfile + '" class="ostatus-link" href="' + obj.statusnet_profile_url + '" donthijack></a>';
+		ostatusHtml = '<a target="_blank" title="' + window.sL.goToTheUsersRemoteProfile + '" class="ostatus-link" href="' + obj.statusnet_profile_url + '"></a>';
 		}
 
 	// rtl or not
@@ -2256,16 +2213,8 @@ function buildQueetHtml(obj, idInStream, extraClasses, requeeted_by, isConversat
 		var replyToProfileurl = obj.attentions[0].profileurl;
 		var replyToScreenName = obj.attentions[0].screen_name;
 		}
-
 	if(typeof replyToProfileurl != 'undefined' && typeof replyToScreenName != 'undefined') {
-
-		// if the reply-to nickname doesn't exist in the notice, we add a class to the reply-to nickname in the header, to make the reply more visible
-		var mentionedInline = '';
-		if(obj.statusnet_html.indexOf('>' + replyToScreenName + '<') === -1) {
-			var mentionedInline = 'not-mentioned-inline';
-			}
-
-		reply_to_html = '<span class="reply-to"><a class="h-card mention ' + mentionedInline + '" href="' + replyToProfileurl + '">@' + replyToScreenName + '</a></span> ';
+		reply_to_html = '<span class="reply-to"><a class="h-card mention" href="' + replyToProfileurl + '">@' + replyToScreenName + '</a></span> ';
 		}
 
 	// in-groups html
@@ -2312,11 +2261,6 @@ function buildQueetHtml(obj, idInStream, extraClasses, requeeted_by, isConversat
 		$(this).contents().unwrap();
 		});
 
-	// bookmarks created by the bookmark plugin get's a tooltip
-	statusnetHTML.find('.xfolkentry').each(function(){
-		$(this).attr('data-tooltip',window.sL.thisIsABookmark);
-		});
-
 	// find a place in the queet-text for the quoted notices
 	statusnetHTML = placeQuotedNoticesInQueetText(attachmentBuild.quotedNotices, statusnetHTML);
 	statusnetHTML = statusnetHTML.html();
@@ -2330,7 +2274,7 @@ function buildQueetHtml(obj, idInStream, extraClasses, requeeted_by, isConversat
 	// external
 	var ostatusHtml = '';
 	if(obj.user.is_local === false) {
-		ostatusHtml = '<a target="_blank" data-tooltip="' + window.sL.goToOriginalNotice + '" class="ostatus-link" href="' + obj.external_url + '" donthijack></a>';
+		ostatusHtml = '<a target="_blank" data-tooltip="' + window.sL.goToOriginalNotice + '" class="ostatus-link" href="' + obj.external_url + '"></a>';
 		var qSource = '<a href="' + obj.external_url + '">' + getHost(obj.external_url) + '</a>';
 		}
 	else {
@@ -2534,7 +2478,6 @@ function buildAttachmentHTML(attachments){
 			&& this.oembed !== false
 			&& this.oembed.title !== null
 			&& this.oembed.provider != 'YouTube'
-			&& this.oembed.provider != 'Vimeo'
 			&& this.oembed.type != 'photo') {
 
 				var oembedImage = '';
@@ -2617,10 +2560,15 @@ function buildAttachmentHTML(attachments){
 
 				// play button for videos and animated gifs
 				var playButtonClass = '';
-				if(typeof this.animated != 'undefined' && this.animated === true
-				|| (this.url.indexOf('://www.youtube.com') > -1 || this.url.indexOf('://youtu.be') > -1)
-				|| this.url.indexOf('://vimeo.com') > -1) {
-					playButtonClass = ' play-button';
+				if((this.url.indexOf('://www.youtube.com') > -1 || this.url.indexOf('://youtu.be') > -1)
+				|| (typeof this.animated != 'undefined' && this.animated === true)) {
+					var playButtonClass = ' play-button';
+					}
+
+				// youtube class
+				var youTubeClass = '';
+				if(this.url.indexOf('://www.youtube.com') > -1 || this.url.indexOf('://youtu.be') > -1) {
+					youTubeClass = ' youtube';
 					}
 
 				// gif-class
@@ -2652,7 +2600,7 @@ function buildAttachmentHTML(attachments){
 
 				var urlToHide = window.siteInstanceURL + 'attachment/' + this.id;
 
-				attachmentHTML += '<a data-local-attachment-url="' + urlToHide + '" style="background-image:url(\'' + img_url + '\')" class="thumb-container' + noCoverClass + playButtonClass + animatedGifClass + ' ' + CSSclassNameByHostFromURL(this.url) + '" href="' + this.url + '"><img class="attachment-thumb" data-mime-type="' + this.mimetype + '" src="' + img_url + '"/ data-width="' + this.width + '" data-height="' + this.height + '" data-full-image-url="' + this.url + '" data-thumb-url="' + img_url + '"></a>';
+				attachmentHTML += '<a data-local-attachment-url="' + urlToHide + '" style="background-image:url(\'' + img_url + '\')" class="thumb-container' + noCoverClass + playButtonClass + youTubeClass + animatedGifClass + '" href="' + this.url + '"><img class="attachment-thumb" data-mime-type="' + this.mimetype + '" src="' + img_url + '"/ data-width="' + this.width + '" data-height="' + this.height + '" data-full-image-url="' + this.url + '" data-thumb-url="' + img_url + '"></a>';
 				urlsToHide.push(urlToHide); // hide this attachment url from the queet text
 				attachmentNum++;
 				}

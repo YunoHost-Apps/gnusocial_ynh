@@ -144,7 +144,7 @@ function mail_notify_from()
  *
  * @return boolean success flag
  */
-function mail_to_user($user, $subject, $body, $headers=array(), $address=null)
+function mail_to_user(&$user, $subject, $body, $headers=array(), $address=null)
 {
     if (!$address) {
         $address = $user->email;
@@ -159,6 +159,45 @@ function mail_to_user($user, $subject, $body, $headers=array(), $address=null)
     $headers['Subject'] = $subject;
 
     return mail_send($recipients, $headers, $body);
+}
+
+/**
+ * Send an email to confirm a user's control of an email address
+ *
+ * @param User   $user     User claiming the email address
+ * @param string $code     Confirmation code
+ * @param string $nickname Nickname of user
+ * @param string $address  email address to confirm
+ *
+ * @see common_confirmation_code()
+ *
+ * @return success flag
+ */
+function mail_confirm_address($user, $code, $nickname, $address, $url=null)
+{
+    if (empty($url)) {
+        $url = common_local_url('confirmaddress', array('code' => $code));
+    }
+
+    // TRANS: Subject for address confirmation email.
+    $subject = _('Email address confirmation');
+
+    // TRANS: Body for address confirmation email.
+    // TRANS: %1$s is the addressed user's nickname, %2$s is the StatusNet sitename,
+    // TRANS: %3$s is the URL to confirm at.
+    $body = sprintf(_("Hey, %1\$s.\n\n".
+                      "Someone just entered this email address on %2\$s.\n\n" .
+                      "If it was you, and you want to confirm your entry, ".
+                      "use the URL below:\n\n\t%3\$s\n\n" .
+                      "If not, just ignore this message.\n\n".
+                      "Thanks for your time, \n%2\$s\n"),
+                    $nickname,
+                    common_config('site', 'name'),
+                    $url);
+
+    $headers = array();
+
+    return mail_to_user($user, $subject, $body, $headers, $address);
 }
 
 /**
@@ -199,7 +238,8 @@ function mail_subscribe_notify_profile($listenee, $other)
 
         $name = $profile->getBestName();
 
-        $long_name = $other->getFancyName();
+        $long_name = ($other->fullname) ?
+          ($other->fullname . ' (' . $other->nickname . ')') : $other->nickname;
 
         $recipients = $listenee->email;
 
@@ -628,19 +668,20 @@ function mail_notify_message($message, $from=null, $to=null)
 /**
  * Notify a user that they have received an "attn:" message AKA "@-reply"
  *
- * @param Profile $rcpt  The Profile who recevied the notice, should be a local user
+ * @param User   $user   The user who recevied the notice
  * @param Notice $notice The notice that was sent
  *
  * @return void
  */
-function mail_notify_attn(Profile $rcpt, Notice $notice)
+function mail_notify_attn($user, $notice)
 {
-    if (!$rcpt->isLocal()) {
+    if (!$user->receivesEmailNotifications()) {
         return;
     }
 
     $sender = $notice->getProfile();
-    if ($rcpt->sameAs($sender)) {
+
+    if ($sender->id == $user->id) {
         return;
     }
 
@@ -650,20 +691,17 @@ function mail_notify_attn(Profile $rcpt, Notice $notice)
     }
 
     // If the author has blocked the author, don't spam them with a notification.
-    if ($rcpt->hasBlocked($sender)) {
+    if ($user->hasBlocked($sender)) {
         return;
     }
 
-    $user = $rcpt->getUser();
-    if (!$user->receivesEmailNotifications()) {
-        return;
-    }
+    $bestname = $sender->getBestName();
 
     common_switch_locale($user->language);
 
     if ($notice->hasConversation()) {
         $conversationUrl = common_local_url('conversation',
-                         array('id' => $notice->conversation)).'#notice-'.$notice->getID();
+                         array('id' => $notice->conversation)).'#notice-'.$notice->id;
         // TRANS: Line in @-reply notification e-mail. %s is conversation URL.
         $conversationEmailText = sprintf(_("The full conversation can be read here:\n\n".
                                            "\t%s"), $conversationUrl) . "\n\n";
@@ -672,8 +710,8 @@ function mail_notify_attn(Profile $rcpt, Notice $notice)
     }
 
     // TRANS: E-mail subject for notice notification.
-    // TRANS: %1$s is the "fancy name" for a profile.
-    $subject = sprintf(_('%1$s sent a notice to your attention'), $sender->getFancyName());
+    // TRANS: %1$s is the sending user's long name, %2$s is the adding user's nickname.
+    $subject = sprintf(_('%1$s (@%2$s) sent a notice to your attention'), $bestname, $sender->nickname);
 
         // TRANS: Body of @-reply notification e-mail.
         // TRANS: %1$s is the sending user's name, $2$s is the StatusNet sitename,
@@ -693,15 +731,15 @@ function mail_notify_attn(Profile $rcpt, Notice $notice)
                     $sender->getFancyName(),//%1
                     common_config('site', 'name'),//%2
                     common_local_url('shownotice',
-                                     array('notice' => $notice->getID())),//%3
-                    $notice->getContent(),//%4
+                                     array('notice' => $notice->id)),//%3
+                    $notice->content,//%4
                     $conversationEmailText,//%5
                     common_local_url('newnotice',
-                                     array('replyto' => $sender->getNickname(), 'inreplyto' => $notice->getID())),//%6
+                                     array('replyto' => $sender->nickname, 'inreplyto' => $notice->id)),//%6
                     common_local_url('replies',
-                                     array('nickname' => $rcpt->getNickname()))) . //%7
+                                     array('nickname' => $user->nickname))) . //%7
                 mail_footer_block();
-    $headers = _mail_prepare_headers('mention', $rcpt->getNickname(), $sender->getNickname());
+    $headers = _mail_prepare_headers('mention', $user->nickname, $sender->nickname);
 
     common_switch_locale();
     mail_to_user($user, $subject, $body, $headers);

@@ -223,10 +223,6 @@ class Router
                         array('action' => 'attachment'),
                         array('attachment' => '[0-9]+'));
 
-            $m->connect('attachment/:attachment/download',
-                        array('action' => 'attachment_download'),
-                        array('attachment' => '[0-9]+'));
-
             $m->connect('attachment/:attachment/thumbnail',
                         array('action' => 'attachment_thumbnail'),
                         array('attachment' => '[0-9]+'));
@@ -260,6 +256,12 @@ class Router
                         array('action' => 'userbyid'),
                         array('id' => '[0-9]+'));
 
+            if (!common_config('performance', 'high')) {
+                $m->connect('tags/', array('action' => 'publictagcloud'));
+                $m->connect('tag/', array('action' => 'publictagcloud'));
+                $m->connect('tags', array('action' => 'publictagcloud'));
+                $m->connect('tag', array('action' => 'publictagcloud'));
+            }
             $m->connect('tag/:tag/rss',
                         array('action' => 'tagrss'),
                         array('tag' => self::REGEX_TAG));
@@ -420,7 +422,7 @@ class Router
 
             $m->connect('api/statuses/update.:format',
                         array('action' => 'ApiStatusesUpdate',
-                              'format' => '(xml|json|atom)'));
+                              'format' => '(xml|json)'));
 
             $m->connect('api/statuses/destroy/:id.:format',
                         array('action' => 'ApiStatusesDestroy',
@@ -830,7 +832,7 @@ class Router
 
                 foreach (array('subscriptions', 'subscribers',
                                'all', 'foaf', 'replies',
-                               ) as $a) {
+                               'microsummary') as $a) {
                     $m->connect($a,
                                 array('action' => $a,
                                       'nickname' => $nickname));
@@ -942,7 +944,7 @@ class Router
 
             foreach (array('subscriptions', 'subscribers',
                            'nudge', 'all', 'foaf', 'replies',
-                           'inbox', 'outbox') as $a) {
+                           'inbox', 'outbox', 'microsummary') as $a) {
                 $m->connect(':nickname/'.$a,
                             array('action' => $a),
                             array('nickname' => Nickname::DISPLAY_FMT));

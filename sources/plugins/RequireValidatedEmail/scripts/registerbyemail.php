@@ -73,4 +73,8 @@ $url = common_local_url('confirmfirstemail',
 
 print "$url\n";
 
-$confirm->sendConfirmation(['url'=>$url]);
+mail_confirm_address($user,
+                     $confirm->code,
+                     $user->nickname,
+                     $email,
+                     $url);
