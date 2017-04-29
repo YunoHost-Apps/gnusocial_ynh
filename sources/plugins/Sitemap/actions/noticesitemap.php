@@ -45,7 +45,7 @@ class NoticesitemapAction extends SitemapAction
     var $notices = null;
     var $j = 0;
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 

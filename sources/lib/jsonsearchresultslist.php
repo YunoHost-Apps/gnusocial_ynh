@@ -184,8 +184,7 @@ class ResultItem
     var $id;
     var $from_user_id;
     var $iso_language_code;
-    var $source = null;
-    var $source_link = null;
+    var $source;
     var $profile_image_url;
     var $created_at;
 
@@ -235,8 +234,7 @@ class ResultItem
 
         $this->iso_language_code = Profile_prefs::getConfigData($this->profile, 'site', 'language');
         
-        // set source and source_link
-        $this->setSourceData();
+        $this->source = $this->getSourceLink($this->notice->source);
 
         $this->profile_image_url = $this->profile->avatarUrl(AVATAR_STREAM_SIZE);
 
@@ -244,43 +242,34 @@ class ResultItem
     }
 
     /**
-     * Set the notice's source data (api/app name and URL)
+     * Show the source of the notice
      *
      * Either the name (and link) of the API client that posted the notice,
-     * or one of other other channels. Uses the local notice object.
+     * or one of other other channels.
      *
-     * @return void
+     * @param string $source the source of the Notice
+     *
+     * @return string a fully rendered source of the Notice
      */
-    function setSourceData()
+    function getSourceLink($source)
     {
-        $source = null;
-        $source_link = null;
-
+        // Gettext translations for the below source types are available.
+        $source_name = _($source);
         switch ($source) {
         case 'web':
         case 'xmpp':
         case 'mail':
         case 'omb':
         case 'api':
-            // Gettext translations for the below source types are available.
-            $source = _($this->notice->source);
             break;
-
         default:
-            $ns = Notice_source::getKV($this->notice->source);
+            $ns = Notice_source::getKV($source);
             if ($ns instanceof Notice_source) {
-                $source = $ns->code;
-                if (!empty($ns->url)) {
-                    $source_link = $ns->url;
-                    if (!empty($ns->name)) {
-                        $source = $ns->name;
-                    }
-                }
+                $source_name = '<a href="' . $ns->url . '">' . $ns->name . '</a>';
             }
             break;
         }
 
-        $this->source = $source;
-        $this->source_link = $source_link;
+        return $source_name;
     }
 }

@@ -58,7 +58,7 @@ class ApiGroupListAllAction extends ApiPrivateAuthAction
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -77,9 +77,9 @@ class ApiGroupListAllAction extends ApiPrivateAuthAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         $sitename   = common_config('site', 'name');
         // TRANS: Message is used as a title when listing the lastest 20 groups. %s is a site name.

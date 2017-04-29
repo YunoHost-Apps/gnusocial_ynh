@@ -44,7 +44,7 @@ class LogFilterPlugin extends Plugin
         $versions[] = array('name' => 'LogFilter',
                             'version' => GNUSOCIAL_VERSION,
                             'author' => 'Brion Vibber',
-                            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/LogFilter',
+                            'homepage' => 'http://status.net/wiki/Plugin:LogFilter',
                             'rawdescription' =>
                             // TRANS: Plugin description.
                             _m('Provides server-side setting to filter log output by type or keyword.'));

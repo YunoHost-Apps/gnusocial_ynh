@@ -56,9 +56,9 @@ class SearchAction extends Action
         return true;
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         $this->showPage();
     }
 

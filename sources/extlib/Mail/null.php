@@ -2,7 +2,7 @@
 /**
  * Null implementation of the PEAR Mail interface
  *
- * PHP version 5
+ * PHP versions 4 and 5
  *
  * LICENSE:
  *
@@ -39,7 +39,7 @@
  * @author      Phil Kernick <philk@rotfl.com.au>
  * @copyright   2010 Phil Kernick
  * @license     http://opensource.org/licenses/bsd-license.php New BSD License
- * @version     CVS: $Id$
+ * @version     CVS: $Id: null.php 294747 2010-02-08 08:18:33Z clockwerx $
  * @link        http://pear.php.net/package/Mail/
  */
 
@@ -47,7 +47,7 @@
  * Null implementation of the PEAR Mail:: interface.
  * @access public
  * @package Mail
- * @version $Revision$
+ * @version $Revision: 294747 $
  */
 class Mail_null extends Mail {
 
@@ -74,8 +74,9 @@ class Mail_null extends Mail {
      * @return mixed Returns true on success, or a PEAR_Error
      *               containing a descriptive error message on
      *               failure.
+     * @access public
      */
-    public function send($recipients, $headers, $body)
+    function send($recipients, $headers, $body)
     {
         return true;
     }

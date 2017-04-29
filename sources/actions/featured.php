@@ -54,7 +54,7 @@ class FeaturedAction extends Action
         return true;
     }
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
         $this->page = ($this->arg('page')) ? ($this->arg('page')+0) : 1;
@@ -74,9 +74,9 @@ class FeaturedAction extends Action
         }
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         $this->showPage();
     }

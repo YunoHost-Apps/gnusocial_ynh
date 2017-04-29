@@ -93,13 +93,7 @@ class QvitterSettingsAction extends SettingsAction
 			$hide_replies_prefs = false;
 		}
 
-		try {
-			$disable_keyboard_shortcuts = Profile_prefs::getData($user->getProfile(), 'qvitter', 'disable_keyboard_shortcuts');
-		} catch (NoResultException $e) {
-			$disable_keyboard_shortcuts = false;
-		}
-
-        $form = new QvitterPrefsForm($this, $disable_enable_prefs, $hide_replies_prefs, $disable_keyboard_shortcuts);
+        $form = new QvitterPrefsForm($this, $disable_enable_prefs, $hide_replies_prefs);
 
         $form->show();
     }
@@ -125,8 +119,6 @@ class QvitterSettingsAction extends SettingsAction
 
         Profile_prefs::setData($user->getProfile(), 'qvitter', 'hide_replies', $this->boolean('hide_replies'));
 
-        Profile_prefs::setData($user->getProfile(), 'qvitter', 'disable_keyboard_shortcuts', $this->boolean('disable_keyboard_shortcuts'));
-
         // TRANS: Confirmation shown when user profile settings are saved.
         $this->showForm(_('Settings saved.'), true);
 
@@ -138,14 +130,12 @@ class QvitterPrefsForm extends Form
 {
     var $disable_enable_prefs;
     var $hide_replies_prefs;
-    var $disable_keyboard_shortcuts;
 
-    function __construct($out, $disable_enable_prefs, $hide_replies_prefs, $disable_keyboard_shortcuts)
+    function __construct($out, $disable_enable_prefs, $hide_replies_prefs)
     {
         parent::__construct($out);
         $this->disable_enable_prefs = $disable_enable_prefs;
         $this->hide_replies_prefs = $hide_replies_prefs;
-        $this->disable_keyboard_shortcuts = $disable_keyboard_shortcuts;
     }
 
     /**
@@ -184,16 +174,6 @@ class QvitterPrefsForm extends Form
         $this->checkbox('hide_replies',
                         _('Hide replies to people I\'m not following'),
                         (!empty($this->hide_replies_prefs)));
-        $this->elementEnd('li');
-        $this->elementEnd('ul');
-        $this->elementEnd('fieldset');
-
-        $this->elementStart('fieldset');
-        $this->elementStart('ul', 'form_data');
-        $this->elementStart('li');
-        $this->checkbox('disable_keyboard_shortcuts',
-                        _('Disable keyboard shortcuts'),
-                        (!empty($this->disable_keyboard_shortcuts)));
         $this->elementEnd('li');
         $this->elementEnd('ul');
         $this->elementEnd('fieldset');

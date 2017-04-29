@@ -172,7 +172,7 @@ class InProcessCachePlugin extends Plugin
      */
     function onPluginVersion(array &$versions)
     {
-        $url = 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/InProcessCache';
+        $url = 'http://status.net/wiki/Plugin:InProcessCache';
 
         $versions[] = array('name' => 'InProcessCache',
                             'version' => GNUSOCIAL_VERSION,

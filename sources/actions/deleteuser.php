@@ -80,7 +80,7 @@ class DeleteuserAction extends ProfileFormAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($this->arg('no')) {

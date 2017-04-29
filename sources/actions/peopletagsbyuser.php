@@ -68,7 +68,7 @@ class PeopletagsbyuserAction extends Action
         }
     }
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -135,9 +135,9 @@ class PeopletagsbyuserAction extends Action
         return true;
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
 		# Post from the tag dropdown; redirect to a GET
 

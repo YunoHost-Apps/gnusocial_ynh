@@ -101,7 +101,7 @@ class CacheLogPlugin extends Plugin
         $versions[] = array('name' => 'CacheLog',
                             'version' => GNUSOCIAL_VERSION,
                             'author' => 'Evan Prodromou',
-                            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/CacheLog',
+                            'homepage' => 'http://status.net/wiki/Plugin:CacheLog',
                             'description' =>
                             // TRANS: Plugin description.
                             _m('Log reads and writes to the cache.'));

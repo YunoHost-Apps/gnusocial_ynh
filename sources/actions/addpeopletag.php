@@ -65,7 +65,7 @@ class AddpeopletagAction extends Action
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -119,7 +119,7 @@ class AddpeopletagAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
         // Throws exception on error
         $ptag = Profile_tag::setTag($this->user->id, $this->tagged->id,

@@ -31,9 +31,10 @@ if (!defined('STATUSNET')) {
     exit(1);
 }
 
+require_once('Auth/Yadis/Yadis.php');
 require_once(__DIR__ . '/lib/util.php');
 
-define('LINKBACKPLUGIN_VERSION', '0.2');
+define('LINKBACKPLUGIN_VERSION', '0.1');
 
 /**
  * Plugin to do linkbacks for notices containing URLs
@@ -58,61 +59,42 @@ class LinkbackPlugin extends Plugin
         parent::__construct();
     }
 
-    function onHandleQueuedNotice(Notice $notice)
+    function onHandleQueuedNotice($notice)
     {
-        if (!$notice->isLocal() || !$notice->isPublic()) {
-            return true;
-        }
+        if (intval($notice->is_local) === Notice::LOCAL_PUBLIC) {
+            // Try to avoid actually mucking with the
+            // notice content
+            $c = $notice->content;
+            $this->notice = $notice;
 
-        // Try to avoid actually mucking with the
-        // notice content
-        $c = $notice->content;
-        $this->notice = $notice;
+            if(!$notice->getProfile()->
+                getPref("linkbackplugin", "disable_linkbacks")
+            ) {
+                // Ignoring results
+                common_replace_urls_callback($c,
+                                             array($this, 'linkbackUrl'));
+            }
 
-        if (!$notice->getProfile()->getPref('linkbackplugin', 'disable_linkbacks')) {
-            // Ignoring results
-            common_replace_urls_callback($c, array($this, 'linkbackUrl'));
-        }
-
-        try {
-            if ($notice->isRepeat()) {
+            if($notice->isRepeat()) {
                 $repeat = Notice::getByID($notice->repeat_of);
                 $this->linkbackUrl($repeat->getUrl());
-            } elseif (!empty($notice->reply_to)) {
-                $parent = $notice->getParent();
-                $this->linkbackUrl($parent->getUrl());
+            } else if(!empty($notice->reply_to)) {
+                try {
+                    $parent = $notice->getParent();
+                    $this->linkbackUrl($parent->getUrl());
+                } catch (NoParentNoticeException $e) {
+                    // can't link back to what we don't know (apparently parent notice disappeared from our db)
+                    return true;
+                }
             }
-        } catch (InvalidUrlException $e) {
-            // can't send linkback to notice if we don't have a remote HTTP(S) URL
-            // but we can still ping the attention-receivers below
-        } catch (NoParentNoticeException $e) {
-            // can't send linkback to non-existing parent URL
-            return true;
-        }
 
-        // doubling up getReplies and getAttentionProfileIDs because we're not entirely migrated yet
-        $replyProfiles = Profile::multiGet('id', array_unique(array_merge($notice->getReplies(), $notice->getAttentionProfileIDs())));
-        foreach ($replyProfiles->fetchAll('profileurl') as $profileurl) {
-            if (common_valid_http_url($profileurl)) {
+            // doubling up getReplies and getAttentionProfileIDs because we're not entirely migrated yet
+            $replyProfiles = Profile::multiGet('id', array_unique(array_merge($notice->getReplies(), $notice->getAttentionProfileIDs())));
+            foreach($replyProfiles->fetchAll('profileurl') as $profileurl) {
                 $this->linkbackUrl($profileurl);
             }
         }
-
         return true;
-    }
-
-    function unparse_url($parsed_url)
-    {
-       $scheme   = isset($parsed_url['scheme']) ? $parsed_url['scheme'] . '://' : '';
-       $host     = isset($parsed_url['host']) ? $parsed_url['host'] : '';
-       $port     = isset($parsed_url['port']) ? ':' . $parsed_url['port'] : '';
-       $user     = isset($parsed_url['user']) ? $parsed_url['user'] : '';
-       $pass     = isset($parsed_url['pass']) ? ':' . $parsed_url['pass']  : '';
-       $pass     = ($user || $pass) ? "$pass@" : '';
-       $path     = isset($parsed_url['path']) ? $parsed_url['path'] : '';
-       $query    = isset($parsed_url['query']) ? '?' . $parsed_url['query'] : '';
-       $fragment = isset($parsed_url['fragment']) ? '#' . $parsed_url['fragment'] : '';
-       return "$scheme$user$pass$host$port$path$query$fragment";
     }
 
     function linkbackUrl($url)
@@ -121,46 +103,40 @@ class LinkbackPlugin extends Plugin
 
         $orig = $url;
         $url = htmlspecialchars_decode($orig);
-        $base = parse_url($url);
-        if (!in_array($base['scheme'], array('http', 'https'))) {
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        if (!in_array($scheme, array('http', 'https'))) {
             return $orig;
         }
 
         // XXX: Do a HEAD first to save some time/bandwidth
-        try {
-            $httpclient = new HTTPClient();
-            $response = $httpclient->get($url, ["User-Agent: {$this->userAgent()}",
-                                                "Accept: application/html+xml,text/html"]);
 
-            if (!in_array($response->getStatus(), array(200, 206))) {
-                throw new Exception('Invalid response code for GET request');
-            }
-        } catch (Exception $e) {
-            // something didn't work out in our GET request
+        $fetcher = Auth_Yadis_Yadis::getHTTPFetcher();
+
+        $result = $fetcher->get($url,
+                                array('User-Agent: ' . $this->userAgent(),
+                                      'Accept: application/html+xml,text/html'));
+
+        if (!in_array($result->status, array('200', '206'))) {
             return $orig;
         }
 
-        $wm = $this->getWebmention($response);
-        if(!is_null($wm)) {
-            $wm = parse_url($wm);
-            if(!$wm) $wm = array();
-            if(!$wm['host']) $wm['host'] = $base['host'];
-            if(!$wm['scheme']) $wm['scheme'] = $base['scheme'];
-            if(!$wm['path']) $wm['path'] = $base['path'];
+        // XXX: Should handle relative-URI resolution in these detections
 
+        $wm = $this->getWebmention($result);
+        if(!empty($wm)) {
             // It is the webmention receiver's job to resolve source
             // Ref: https://github.com/converspace/webmention/issues/43
-            $this->webmention($url, $this->unparse_url($wm));
+            $this->webmention($url, $wm);
         } else {
-            $pb = $this->getPingback($response);
+            $pb = $this->getPingback($result);
             if (!empty($pb)) {
                 // Pingback still looks for exact URL in our source, so we
                 // must send what we have
                 $this->pingback($url, $pb);
             } else {
-                $tb = $this->getTrackback($response);
+                $tb = $this->getTrackback($result);
                 if (!empty($tb)) {
-                    $this->trackback($response->getEffectiveUrl(), $tb);
+                    $this->trackback($result->final_url, $tb);
                 }
             }
         }
@@ -170,29 +146,28 @@ class LinkbackPlugin extends Plugin
 
     // Based on https://github.com/indieweb/mention-client-php
     // which is licensed Apache 2.0
-    function getWebmention(HTTP_Request2_Response $response) {
-        $link = $response->getHeader('Link');
-        if (!is_null($link)) {
-            // XXX: the fetcher gives back a comma-separated string of all Link headers, I hope the parsing works reliably
-            if (preg_match('~<([^>]+)>; rel="?(?:[^" ]* )*(?:http://webmention.org/|webmention)(?: [^" ]*)*"?~', $link, $match)) {
+    function getWebmention($result) {
+        if (isset($result->headers['Link'])) {
+            // XXX: the fetcher only gives back one of each header, so this may fail on multiple Link headers
+            if(preg_match('~<((?:https?://)?[^>]+)>; rel="webmention"~', $result->headers['Link'], $match)) {
+                return $match[1];
+            } elseif(preg_match('~<((?:https?://)?[^>]+)>; rel="http://webmention.org/?"~', $result->headers['Link'], $match)) {
                 return $match[1];
             }
         }
 
         // FIXME: Do proper DOM traversal
-        // Currently fails https://webmention.rocks/test/13, https://webmention.rocks/test/17
-        if(preg_match('~<(?:link|a)[ ]+href="([^"]*)"[ ]+rel="(?:[^" ]* )*(?:http://webmention.org/|webmention)(?: [^" ]*)*"[ ]*/?>~i', $response->getBody(), $match)
-                || preg_match('~<(?:link|a)[ ]+rel="(?:[^" ]* )*(?:http://webmention.org/|webmention)(?: [^" ]*)*"[ ]+href="([^"]*)"[ ]*/?>~i', $response->getBody(), $match)) {
+        if(preg_match('/<(?:link|a)[ ]+href="([^"]+)"[ ]+rel="[^" ]* ?webmention ?[^" ]*"[ ]*\/?>/i', $result->body, $match)
+           || preg_match('/<(?:link|a)[ ]+rel="[^" ]* ?webmention ?[^" ]*"[ ]+href="([^"]+)"[ ]*\/?>/i', $result->body, $match)) {
+            return $match[1];
+        } elseif(preg_match('/<(?:link|a)[ ]+href="([^"]+)"[ ]+rel="http:\/\/webmention\.org\/?"[ ]*\/?>/i', $result->body, $match)
+                 || preg_match('/<(?:link|a)[ ]+rel="http:\/\/webmention\.org\/?"[ ]+href="([^"]+)"[ ]*\/?>/i', $result->body, $match)) {
             return $match[1];
         }
-
-        return NULL;
     }
 
     function webmention($url, $endpoint) {
         $source = $this->notice->getUrl();
-
-        common_log(LOG_DEBUG,"Attempting webmention to $endpoint for $url from $source");
 
         $payload = array(
             'source' => $source,
@@ -209,7 +184,7 @@ class LinkbackPlugin extends Plugin
                 $payload
             );
 
-            if(!in_array($response->getStatus(), array(200,201,202))) {
+            if(!in_array($response->getStatus(), array(200,202))) {
                 common_log(LOG_WARNING,
                            "Webmention request failed for '$url' ($endpoint)");
             }
@@ -218,11 +193,11 @@ class LinkbackPlugin extends Plugin
         }
     }
 
-    function getPingback(HTTP_Request2_Response $response) {
-        if ($response->getHeader('X-Pingback')) {
-            return $response->getHeader('X-Pingback');
-        } elseif (preg_match('/<(?:link|a)[ ]+href="([^"]+)"[ ]+rel="[^" ]* ?pingback ?[^" ]*"[ ]*\/?>/i', $response->getBody(), $match)
-                || preg_match('/<(?:link|a)[ ]+rel="[^" ]* ?pingback ?[^" ]*"[ ]+href="([^"]+)"[ ]*\/?>/i', $response->getBody(), $match)) {
+    function getPingback($result) {
+        if (array_key_exists('X-Pingback', $result->headers)) {
+            return $result->headers['X-Pingback'];
+        } else if(preg_match('/<(?:link|a)[ ]+href="([^"]+)"[ ]+rel="[^" ]* ?pingback ?[^" ]*"[ ]*\/?>/i', $result->body, $match)
+                  || preg_match('/<(?:link|a)[ ]+rel="[^" ]* ?pingback ?[^" ]*"[ ]+href="([^"]+)"[ ]*\/?>/i', $result->body, $match)) {
             return $match[1];
         }
     }
@@ -262,10 +237,10 @@ class LinkbackPlugin extends Plugin
     // Largely cadged from trackback_cls.php by
     // Ran Aroussi <ran@blogish.org>, GPL2 or any later version
     // http://phptrackback.sourceforge.net/
-    function getTrackback(HTTP_Request2_Response $response)
+    function getTrackback($result)
     {
-        $text = $response->getBody();
-        $url = $response->getEffectiveUrl();
+        $text = $result->body;
+        $url = $result->final_url;
 
         if (preg_match_all('/(<rdf:RDF.*?<\/rdf:RDF>)/sm', $text, $match, PREG_SET_ORDER)) {
             for ($i = 0; $i < count($match); $i++) {
@@ -316,22 +291,26 @@ class LinkbackPlugin extends Plugin
         // TRANS: Trackback title.
         // TRANS: %1$s is a profile nickname, %2$s is a timestamp.
         $args = array('title' => sprintf(_m('%1$s\'s status on %2$s'),
-                                         $profile->getNickname(),
-                                         common_exact_date($this->notice->getCreated())),
-                      'excerpt' => $this->notice->getContent(),
+                                         $profile->nickname,
+                                         common_exact_date($this->notice->created)),
+                      'excerpt' => $this->notice->content,
                       'url' => $this->notice->getUrl(),
-                      'blog_name' => $profile->getNickname());
+                      'blog_name' => $profile->nickname);
 
-        try {
-            $httpclient = new HTTPClient(null, HTTPClient::METHOD_POST);
-            $response = $httpclient->post($endpoint, ["User-Agent: {$this->userAgent()}"], $args);
-            if ($response->getStatus() === 200) {
-                common_log(LOG_INFO, "Trackback success for '$url' ($endpoint): "._ve($response->getBody()));
-            } else {
-                common_log(LOG_WARNING, "Trackback error for '$url' ($endpoint): "._ve($response->getBody()));
-            }
-        } catch (Exception $e) {
-            common_log(LOG_INFO, "Trackback error for '$url' ($endpoint): "._ve($e->getMessage()));
+        $fetcher = Auth_Yadis_Yadis::getHTTPFetcher();
+
+        $result = $fetcher->post($endpoint,
+                                 http_build_query($args),
+                                 array('User-Agent: ' . $this->userAgent()));
+
+        if ($result->status != '200') {
+            common_log(LOG_WARNING,
+                       "Trackback error for '$url' ($endpoint): ".
+                       "$result->body");
+        } else {
+            common_log(LOG_INFO,
+                       "Trackback success for '$url' ($endpoint): ".
+                       "'$result->body'");
         }
     }
 
@@ -358,7 +337,7 @@ class LinkbackPlugin extends Plugin
         $versions[] = array('name' => 'Linkback',
                             'version' => LINKBACKPLUGIN_VERSION,
                             'author' => 'Evan Prodromou',
-                            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/Linkback',
+                            'homepage' => 'http://status.net/wiki/Plugin:Linkback',
                             'rawdescription' =>
                             // TRANS: Plugin description.
                             _m('Notify blog authors when their posts have been linked in '.

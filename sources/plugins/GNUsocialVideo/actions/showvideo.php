@@ -34,7 +34,7 @@ class ShowvideoAction extends ShownoticeAction
     protected $id = null;
     protected $vid = null;
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         OwnerDesignAction::prepare($args);
         $this->id = $this->trimmed('id');

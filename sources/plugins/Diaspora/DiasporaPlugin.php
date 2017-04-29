@@ -33,6 +33,9 @@ if (!defined('GNUSOCIAL')) { exit(1); }
 // Depends on OStatus of course.
 addPlugin('OStatus');
 
+//Since Magicsig hasn't loaded yet
+require_once('Crypt/AES.php');
+
 class DiasporaPlugin extends Plugin
 {
     const REL_SEED_LOCATION = 'http://joindiaspora.com/seed_location';
@@ -43,7 +46,7 @@ class DiasporaPlugin extends Plugin
     {
         // So far we've only handled RSA keys, but it can change in the future,
         // so be prepared. And remember to change the statically assigned type attribute below!
-        assert($magicsig->publicKey instanceof \phpseclib\Crypt\RSA);
+        assert($magicsig->publicKey instanceof Crypt_RSA);
         $xrd->links[] = new XML_XRD_Element_Link(self::REL_PUBLIC_KEY,
                                     base64_encode($magicsig->exportPublicKey()), 'RSA');
 
@@ -79,7 +82,7 @@ class DiasporaPlugin extends Plugin
     public function onPluginVersion(array &$versions)
     {
         $versions[] = array('name' => 'Diaspora',
-                            'version' => '0.2',
+                            'version' => '0.1',
                             'author' => 'Mikael Nordfeldth',
                             'homepage' => 'https://gnu.io/social',
                             // TRANS: Plugin description.
@@ -114,7 +117,7 @@ class DiasporaPlugin extends Plugin
          * aes-256-cbc cipher. I shall refer to this as the “inner key”
          * and the “inner initialization vector (iv)”.
          */
-        $inner_key = new \phpseclib\Crypt\AES(\phpseclib\Crypt\AES::MODE_CBC);
+        $inner_key = new Crypt_AES(CRYPT_AES_MODE_CBC);
         $inner_key->setKeyLength(256);  // set length to 256 bits (could be calculated, but let's be sure)
         $inner_key->setKey(common_random_rawstr(32));   // 32 bytes from a (pseudo) random source
         $inner_key->setIV(common_random_rawstr(16));    // 16 bytes is the block length
@@ -140,7 +143,7 @@ class DiasporaPlugin extends Plugin
          * for the aes-256-cbc cipher. I shall refer to this as the
          * “outer key” and the “outer initialization vector (iv)”.
          */
-        $outer_key = new \phpseclib\Crypt\AES(\phpseclib\Crypt\AES::MODE_CBC);
+        $outer_key = new Crypt_AES(CRYPT_AES_MODE_CBC);
         $outer_key->setKeyLength(256);  // set length to 256 bits (could be calculated, but let's be sure)
         $outer_key->setKey(common_random_rawstr(32));   // 32 bytes from a (pseudo) random source
         $outer_key->setIV(common_random_rawstr(16));    // 16 bytes is the block length
@@ -150,7 +153,7 @@ class DiasporaPlugin extends Plugin
          * and “outer iv” (using the aes-256-cbc cipher). This encrypted
          * blob shall be referred to as “the ciphertext”. 
          */
-        $ciphertext = $outer_key->encrypt($decrypted_header, \phpseclib\Crypt\RSA::PADDING_PKCS1);
+        $ciphertext = $outer_key->encrypt($decrypted_header);
 
         /**
          * Construct the following JSON object, which shall be referred to
@@ -171,7 +174,7 @@ class DiasporaPlugin extends Plugin
         common_debug('Diaspora creating "outer aes key bundle", will require magic-public-key');
         $key_fetcher = new MagicEnvelope();
         $remote_keys = $key_fetcher->getKeyPair($target, true); // actually just gets the public key
-        $enc_outer = $remote_keys->publicKey->encrypt($outer_bundle, \phpseclib\Crypt\RSA::PADDING_PKCS1);
+        $enc_outer = $remote_keys->publicKey->encrypt($outer_bundle);
 
         /**
          * Construct the following JSON object, which I shall refer to as
@@ -201,7 +204,7 @@ class DiasporaPlugin extends Plugin
          *      chose earlier.
          * 2. Base64-encode the encrypted payload message.
          */
-        $payload = $inner_key->encrypt($magic_env->getData(), \phpseclib\Crypt\RSA::PADDING_PKCS1);
+        $payload = $inner_key->encrypt($magic_env->getData());
         //FIXME: This means we don't actually put an <atom:entry> in the payload,
         // since Diaspora has its own update method! Silly me. Read up on:
         // https://wiki.diasporafoundation.org/Federation_Message_Semantics
@@ -225,12 +228,7 @@ class DiasporaPlugin extends Plugin
 
     public function onSalmonSlap($endpoint_uri, MagicEnvelope $magic_env, Profile $target=null)
     {
-        try {
-            $envxml = $magic_env->toXML($target, 'diaspora');
-        } catch (Exception $e) {
-            common_log(LOG_ERR, sprintf('Could not generate Magic Envelope XML (diaspora flavour) for profile id=='.$target->getID().': '.$e->getMessage()));
-            return false;
-        }
+        $envxml = $magic_env->toXML($target, 'diaspora');
 
         // Diaspora wants another POST format (base64url-encoded POST variable 'xml')
         $headers = array('Content-Type: application/x-www-form-urlencoded');

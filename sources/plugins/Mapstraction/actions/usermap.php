@@ -44,7 +44,7 @@ if (!defined('STATUSNET')) {
  */
 class UsermapAction extends MapAction
 {
-    function prepare(array $args = array())
+    function prepare($args)
     {
         if(parent::prepare($args)) {
             $this->notice = empty($this->tag)

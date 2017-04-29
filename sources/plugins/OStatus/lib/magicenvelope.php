@@ -97,7 +97,7 @@ class MagicEnvelope
             throw new ServerException(sprintf('No public key found for profile (id==%d)', $profile->id));
         }
 
-        assert($magicsig->publicKey instanceof \phpseclib\Crypt\RSA);
+        assert($magicsig->publicKey instanceof Crypt_RSA);
 
         return $magicsig;
     }
@@ -203,7 +203,7 @@ class MagicEnvelope
             $magicsig = Magicsig::generate($this->actor->getUser());
         }
         assert($magicsig instanceof Magicsig);
-        assert($magicsig->privateKey instanceof \phpseclib\Crypt\RSA);
+        assert($magicsig->privateKey instanceof Crypt_RSA);
 
         // Prepare text and metadata for signing
         $this->data = Magicsig::base64_url_encode($text);

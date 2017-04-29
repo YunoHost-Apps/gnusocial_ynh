@@ -42,10 +42,14 @@ if (!defined('GNUSOCIAL')) { exit(1); }
  */
 class ConversationNoticeStream extends ScopingNoticeStream
 {
-    function __construct($id, Profile $scoped=null)
+    function __construct($id, $profile = -1)
     {
+        if (is_int($profile) && $profile == -1) {
+            $profile = Profile::current();
+        }
+
         parent::__construct(new RawConversationNoticeStream($id),
-                            $scoped);
+                            $profile);
     }
 }
 

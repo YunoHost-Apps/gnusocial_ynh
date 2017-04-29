@@ -64,7 +64,7 @@ class PluginEnableAction extends Action
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -121,7 +121,7 @@ class PluginEnableAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
         $key = 'disable-' . $this->plugin;
         Config::save('plugins', $key, $this->overrideValue());

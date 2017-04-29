@@ -28,7 +28,11 @@
  * @link      http://status.net/
  */
 
-if (!defined('GNUSOCIAL')) { exit(1); }
+if (!defined('STATUSNET')) {
+    // This check helps protect against security problems;
+    // your code file can't be executed directly from the web.
+    exit(1);
+}
 
 /**
  * Class comment
@@ -45,12 +49,16 @@ class ScopingNoticeStream extends FilteringNoticeStream
 {
     protected $profile;
 
-    function __construct(NoticeStream $upstream, Profile $scoped=null)
+    function __construct($upstream, $profile = -1)
     {
         parent::__construct($upstream);
 
-        $this->profile = $scoped;   // legacy
-        $this->scoped = $scoped;
+        // Invalid but not null
+        if (is_int($profile) && $profile == -1) {
+            $profile = Profile::current();
+        }
+
+        $this->profile = $profile;
     }
 
     /**
@@ -61,9 +69,9 @@ class ScopingNoticeStream extends FilteringNoticeStream
      * @return boolean whether to include the notice
      */
 
-    protected function filter(Notice $notice)
+    function filter($notice)
     {
-        return $notice->inScope($this->scoped);
+        return $notice->inScope($this->profile);
     }
 
     function prefill($notices)

@@ -35,7 +35,7 @@ class FoafGroupAction extends Action
         return true;
     }
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -76,9 +76,9 @@ class FoafGroupAction extends Action
         return true;
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         header('Content-Type: application/rdf+xml');
 

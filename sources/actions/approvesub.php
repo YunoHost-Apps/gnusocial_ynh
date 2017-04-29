@@ -50,7 +50,7 @@ class ApprovesubAction extends Action
     /**
      * Prepare to run
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -97,9 +97,9 @@ class ApprovesubAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         $cur = common_current_user();
 
         try {

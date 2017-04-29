@@ -140,7 +140,7 @@ class ConversationTree extends NoticeList
      *
      * @return NoticeListItem a list item to show
      */
-    function newListItem(Notice $notice)
+    function newListItem($notice)
     {
         return new ConversationTreeItem($notice, $this->out);
     }

@@ -45,16 +45,6 @@ class User_openid extends Managed_DataObject
         );
     }
 
-    public function getID()
-    {
-        if (!isset($this->user_id)) {
-            throw new Exception('No ID set.');
-        } elseif (empty($this->user_id)) {
-            throw new Exception('Empty ID for object! (not inserted yet?).');
-        }
-        return intval($this->user_id);
-    }
-
     static function hasOpenID($user_id)
     {
         $oid = new User_openid();

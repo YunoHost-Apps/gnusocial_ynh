@@ -344,7 +344,7 @@ class ActivityPlugin extends Plugin
         $versions[] = array('name' => 'Activity',
                             'version' => self::VERSION,
                             'author' => 'Evan Prodromou',
-                            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/Activity',
+                            'homepage' => 'http://status.net/wiki/Plugin:Activity',
                             'rawdescription' =>
                             // TRANS: Plugin description.
                             _m('Emits notices when social activities happen.'));

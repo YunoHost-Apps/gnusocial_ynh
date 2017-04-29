@@ -57,7 +57,7 @@ class AutocompletePlugin extends Plugin
         $versions[] = array('name' => 'Autocomplete',
                             'version' => GNUSOCIAL_VERSION,
                             'author' => 'Craig Andrews',
-                            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/Autocomplete',
+                            'homepage' => 'http://status.net/wiki/Plugin:Autocomplete',
                             'rawdescription' =>
                             // TRANS: Plugin description.
                             _m('The autocomplete plugin adds autocompletion for @ replies.'));

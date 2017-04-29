@@ -40,23 +40,25 @@ define('MEMBERS_PER_SECTION', 27);
  * @license  http://www.fsf.org/licensing/licenses/agpl-3.0.html GNU Affero General Public License version 3.0
  * @link     http://status.net/
  */
-class GroupAction extends ShowstreamAction
+class GroupAction extends Action
 {
     protected $group;
 
-    protected function doPreparation()
+    protected function prepare(array $args=array())
     {
+        parent::prepare($args);
+
         $nickname_arg = $this->arg('nickname');
         $nickname = common_canonical_nickname($nickname_arg);
 
         // Permanent redirect on non-canonical nickname
 
-        if ($nickname_arg !== $nickname) {
+        if ($nickname_arg != $nickname) {
             $args = array('nickname' => $nickname);
             if ($this->page != 1) {
                 $args['page'] = $this->page;
             }
-            common_redirect(common_local_url($this->getActionName(), $args), 301);
+            common_redirect(common_local_url('showgroup', $args), 301);
         }
 
         if (!$nickname) {
@@ -77,16 +79,15 @@ class GroupAction extends ShowstreamAction
             } else {
                 common_log(LOG_NOTICE, "Couldn't find local group for nickname '$nickname'");
                 // TRANS: Client error displayed if no remote group with a given name was found requesting group page.
-                throw new ClientException(_('No such group.'), 404);
+                $this->clientError(_('No such group.'), 404);
             }
         }
 
         $this->group = User_group::getKV('id', $local->group_id);
-        $this->target = $this->group->getProfile();
 
         if (!$this->group instanceof User_group) {
             // TRANS: Client error displayed if no local group with a given name was found requesting group page.
-            throw new ClientException(_('No such group.'), 404);
+            $this->clientError(_('No such group.'), 404);
         }
     }
 
@@ -104,12 +105,18 @@ class GroupAction extends ShowstreamAction
     function showSections()
     {
         $this->showMembers();
-        if ($this->scoped instanceof Profile && $this->scoped->isAdmin($this->group)) {
+        $cur = common_current_user();
+        if ($cur && $cur->isAdmin($this->group)) {
             $this->showPending();
             $this->showBlocked();
         }
 
         $this->showAdmins();
+
+        if (!common_config('performance', 'high')) {
+            $cloud = new GroupTagCloudSection($this, $this->group);
+            $cloud->show();
+        }
     }
 
     /**

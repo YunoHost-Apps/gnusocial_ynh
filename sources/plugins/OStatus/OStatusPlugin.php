@@ -28,6 +28,8 @@
 
 if (!defined('GNUSOCIAL')) { exit(1); }
 
+set_include_path(get_include_path() . PATH_SEPARATOR . dirname(__FILE__) . '/extlib/phpseclib');
+
 class OStatusPlugin extends Plugin
 {
     /**
@@ -81,6 +83,20 @@ class OStatusPlugin extends Plugin
         return true;
     }
 
+    public function onAutoload($cls)
+    {
+        switch ($cls) {
+        case 'Crypt_AES':
+        case 'Crypt_RSA':
+            // Crypt_AES becomes Crypt/AES.php which is found in extlib/phpseclib/
+            // which has been added to our include_path before
+            require_once str_replace('_', '/', $cls) . '.php';
+            return false;
+        }
+
+        return parent::onAutoload($cls);
+    }
+
     /**
      * Set up queue handlers for outgoing hub pushes
      * @param QueueManager $qm
@@ -113,14 +129,14 @@ class OStatusPlugin extends Plugin
      */
     function onStartEnqueueNotice($notice, &$transports)
     {
-        if ($notice->inScope(null) && $notice->getProfile()->hasRight(Right::PUBLICNOTICE)) {
+        if ($notice->inScope(null)) {
             // put our transport first, in case there's any conflict (like OMB)
             array_unshift($transports, 'ostatus');
-            $this->log(LOG_INFO, "OSTATUS [{$notice->getID()}]: queued for OStatus processing");
+            $this->log(LOG_INFO, "Notice {$notice->id} queued for OStatus processing");
         } else {
             // FIXME: we don't do privacy-controlled OStatus updates yet.
             // once that happens, finer grain of control here.
-            $this->log(LOG_NOTICE, "OSTATUS [{$notice->getID()}]: Not queueing because of privacy; scope = {$notice->scope}");
+            $this->log(LOG_NOTICE, "Not queueing notice {$notice->id} for OStatus because of privacy; scope = {$notice->scope}");
         }
         return true;
     }
@@ -296,7 +312,7 @@ class OStatusPlugin extends Plugin
                 assert($profile instanceof Profile);
 
                 $text = !empty($profile->nickname) && mb_strlen($profile->nickname) < mb_strlen($target)
-                        ? $profile->getNickname()   // TODO: we could do getBestName() or getFullname() here
+                        ? $profile->getNickname()   // TODO: we could do getFancyName() or getFullname() here
                         : $target;
                 $url = $profile->getUri();
                 if (!common_valid_http_url($url)) {
@@ -460,6 +476,7 @@ class OStatusPlugin extends Plugin
     function onCheckSchema() {
         $schema = Schema::get();
         $schema->ensureTable('ostatus_profile', Ostatus_profile::schemaDef());
+        $schema->ensureTable('ostatus_source', Ostatus_source::schemaDef());
         $schema->ensureTable('feedsub', FeedSub::schemaDef());
         $schema->ensureTable('hubsub', HubSub::schemaDef());
         $schema->ensureTable('magicsig', Magicsig::schemaDef());
@@ -1212,7 +1229,7 @@ class OStatusPlugin extends Plugin
         $versions[] = array('name' => 'OStatus',
                             'version' => GNUSOCIAL_VERSION,
                             'author' => 'Evan Prodromou, James Walker, Brion Vibber, Zach Copley',
-                            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/OStatus',
+                            'homepage' => 'http://status.net/wiki/Plugin:OStatus',
                             // TRANS: Plugin description.
                             'rawdescription' => _m('Follow people across social networks that implement '.
                                '<a href="http://ostatus.org/">OStatus</a>.'));
@@ -1291,23 +1308,10 @@ class OStatusPlugin extends Plugin
 
     function onEndWebFingerNoticeLinks(XML_XRD $xrd, Notice $target)
     {
-        $salmon_url = null;
-        $actor = $target->getProfile();
-        if ($actor->isLocal()) {
-            $profiletype = $this->profileTypeString($actor);
-            $salmon_url = common_local_url("{$profiletype}salmon", array('id' => $actor->getID()));
-        } else {
-            try {
-                $oprofile = Ostatus_profile::fromProfile($actor);
-                $salmon_url = $oprofile->salmonuri;
-            } catch (Exception $e) {
-                // Even though it's not a local user, we couldn't get an Ostatus_profile?!
-            }
-        }
-        // Ostatus_profile salmon URL may be empty
-        if (!empty($salmon_url)) {
-            $xrd->links[] = new XML_XRD_Element_Link(Salmon::REL_SALMON, $salmon_url);
-        }
+        $author = $target->getProfile();
+        $profiletype = $this->profileTypeString($author);
+        $salmon_url = common_local_url("{$profiletype}salmon", array('id' => $author->id));
+        $xrd->links[] = new XML_XRD_Element_Link(Salmon::REL_SALMON, $salmon_url);
         return true;
     }
 
@@ -1315,12 +1319,6 @@ class OStatusPlugin extends Plugin
     {
         if ($target->getObjectType() === ActivityObject::PERSON) {
             $this->addWebFingerPersonLinks($xrd, $target);
-        } elseif ($target->getObjectType() === ActivityObject::GROUP) {
-            $xrd->links[] = new XML_XRD_Element_Link(Discovery::UPDATESFROM,
-                            common_local_url('ApiTimelineGroup',
-                                array('id' => $target->getGroup()->getID(), 'format' => 'atom')),
-                            'application/atom+xml');
-
         }
 
         // Salmon
@@ -1413,12 +1411,7 @@ class OStatusPlugin extends Plugin
 
     public function onSalmonSlap($endpoint_uri, MagicEnvelope $magic_env, Profile $target=null)
     {
-        try {
-            $envxml = $magic_env->toXML($target);
-        } catch (Exception $e) {
-            common_log(LOG_ERR, sprintf('Could not generate Magic Envelope XML for profile id=='.$target->getID().': '.$e->getMessage()));
-            return false;
-        }
+        $envxml = $magic_env->toXML($target);
 
         $headers = array('Content-Type: application/magic-envelope+xml');
 

@@ -42,15 +42,19 @@ if (!defined('GNUSOCIAL')) { exit(1); }
  */
 class FaveNoticeStream extends ScopingNoticeStream
 {
-    function __construct(Profile $target, Profile $scoped=null)
+    function __construct($user_id, $own, $profile = -1)
     {
-        $stream = new RawFaveNoticeStream($target, $scoped);
-        if ($target->sameAs($scoped)) {
+        $stream = new RawFaveNoticeStream($user_id, $own);
+        if ($own) {
             $key = 'fave:ids_by_user_own:'.$user_id;
         } else {
             $key = 'fave:ids_by_user:'.$user_id;
         }
-        parent::__construct(new CachingNoticeStream($stream, $key), $scoped);
+        if (is_int($profile) && $profile == -1) {
+            $profile = Profile::current();
+        }
+        parent::__construct(new CachingNoticeStream($stream, $key),
+                            $profile);
     }
 }
 
@@ -71,12 +75,12 @@ class RawFaveNoticeStream extends NoticeStream
 
     protected $selectVerbs = array();
 
-    function __construct(Profile $target, Profile $scoped=null)
+    function __construct($user_id, $own)
     {
         parent::__construct();
 
-        $this->user_id = $target->getID();
-        $this->own     = $target->sameAs($scoped);
+        $this->user_id = $user_id;
+        $this->own     = $own;
     }
 
     /**

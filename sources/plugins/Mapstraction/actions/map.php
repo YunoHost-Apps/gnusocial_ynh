@@ -48,7 +48,7 @@ class MapAction extends Action
     var $page    = null;
     var $notices = null;
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -94,9 +94,9 @@ class MapAction extends Action
         return true;
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         $this->showPage();
     }
 

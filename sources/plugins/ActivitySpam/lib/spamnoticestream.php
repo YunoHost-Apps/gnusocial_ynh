@@ -28,7 +28,11 @@
  * @link      http://status.net/
  */
 
-if (!defined('GNUSOCIAL')) { exit(1); }
+if (!defined('STATUSNET')) {
+    // This check helps protect against security problems;
+    // your code file can't be executed directly from the web.
+    exit(1);
+}
 
 /**
  * Spam notice stream
@@ -43,10 +47,13 @@ if (!defined('GNUSOCIAL')) { exit(1); }
 
 class SpamNoticeStream extends ScopingNoticeStream
 {
-    function __construct(Profile $scoped=null)
+    function __construct($tag, $profile = -1)
     {
-        parent::__construct(new CachingNoticeStream(new RawSpamNoticeStream(), 'spam_score:notice_ids'),
-                            $scoped);
+        if (is_int($profile) && $profile == -1) {
+            $profile = Profile::current();
+        }
+        parent::__construct(new CachingNoticeStream(new RawSpamNoticeStream(),
+                                                    'spam_score:notice_ids'));
     }
 }
 

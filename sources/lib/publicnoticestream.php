@@ -41,13 +41,13 @@ if (!defined('GNUSOCIAL')) { exit(1); }
  * @link      http://status.net/
  */
 
-class PublicNoticeStream extends ModeratedNoticeStream
+class PublicNoticeStream extends ScopingNoticeStream
 {
-    function __construct(Profile $scoped=null)
+    function __construct($profile=null)
     {
         parent::__construct(new CachingNoticeStream(new RawPublicNoticeStream(),
                                                     'public'),
-                            $scoped);
+                            $profile);
     }
 }
 

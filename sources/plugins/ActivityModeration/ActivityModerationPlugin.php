@@ -74,7 +74,7 @@ class ActivityModerationPlugin extends ActivityVerbHandlerPlugin
         switch (true) {
         case ActivityUtils::compareVerbs($verb, array(ActivityVerb::DELETE)):
             // do whatever preparation is necessary to delete a verb
-            $target->deleteAs($scoped);
+            $target->delete();
             break;
         default:
             throw new ServerException('ActivityVerb POST not handled by plugin that was supposed to do it.');
@@ -87,8 +87,7 @@ class ActivityModerationPlugin extends ActivityVerbHandlerPlugin
     }
 
     public function onDeleteNoticeAsProfile(Notice $stored, Profile $actor, &$result) {
-        // By adding a new object with the 'delete' verb we will trigger
-        // $this->saveObjectFromActivity that will do the actual ->delete()
+        // By adding a new 'delete' verb we will eventually trigger $this->saveObjectFromActivity
         if (false === Deleted_notice::addNew($stored, $actor)) {
             // false is returned if we did not have an error, but did not create the object
             // (i.e. the author is currently being deleted)
@@ -96,8 +95,8 @@ class ActivityModerationPlugin extends ActivityVerbHandlerPlugin
         }
 
         // We return false (to stop the event) if the deleted_notice entry was 
-        // added, which means we have already run $this->saveObjectFromActivity
-        // which in turn has called the delete function of the notice.
+        // added, which means we have run $this->saveObjectFromActivity which 
+        // in turn has called the delete function of the notice.
         return false;
     }
 

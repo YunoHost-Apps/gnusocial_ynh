@@ -64,7 +64,7 @@ class SubscribeAction extends Action
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -118,7 +118,7 @@ class SubscribeAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
         // Throws exception on error
 

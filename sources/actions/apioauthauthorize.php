@@ -60,7 +60,7 @@ class ApiOAuthAuthorizeAction extends ApiOAuthAction
         return false;
     }
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -88,9 +88,9 @@ class ApiOAuthAuthorizeAction extends ApiOAuthAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 

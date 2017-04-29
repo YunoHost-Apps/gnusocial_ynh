@@ -102,7 +102,7 @@ class OembedPlugin extends Plugin
                     array(),
                     array('format'=>'json', 'url'=>
                         common_local_url('attachment',
-                            array('attachment' => $action->attachment->getID())))),
+                            array('attachment' => $action->attachment->id)))),
                 'title'=>'oEmbed'),null);
             $action->element('link',array('rel'=>'alternate',
                 'type'=>'text/xml+oembed',
@@ -111,7 +111,7 @@ class OembedPlugin extends Plugin
                     array(),
                     array('format'=>'xml','url'=>
                         common_local_url('attachment',
-                            array('attachment' => $action->attachment->getID())))),
+                            array('attachment' => $action->attachment->id)))),
                 'title'=>'oEmbed'),null);
             break;
         case 'shownotice':
@@ -143,11 +143,6 @@ class OembedPlugin extends Plugin
         return true;
     }
 
-    public function onEndShowStylesheets(Action $action) {
-        $action->cssLink($this->path('css/oembed.css'));
-        return true;
-    }
-
     /**
      * Save embedding information for a File, if applicable.
      *
@@ -159,9 +154,9 @@ class OembedPlugin extends Plugin
      */
     public function onEndFileSaveNew(File $file)
     {
-        $fo = File_oembed::getKV('file_id', $file->getID());
+        $fo = File_oembed::getKV('file_id', $file->id);
         if ($fo instanceof File_oembed) {
-            common_log(LOG_WARNING, "Strangely, a File_oembed object exists for new file {$file->getID()}", __FILE__);
+            common_log(LOG_WARNING, "Strangely, a File_oembed object exists for new file {$file->id}", __FILE__);
             return true;
         }
 
@@ -174,20 +169,18 @@ class OembedPlugin extends Plugin
                 if ($oembed_data === false) {
                     throw new Exception('Did not get oEmbed data from URL');
                 }
-                $file->setTitle($oembed_data->title);
             } catch (Exception $e) {
-                common_log(LOG_WARNING, sprintf(__METHOD__.': %s thrown when getting oEmbed data: %s', get_class($e), _ve($e->getMessage())));
                 return true;
             }
 
-            File_oembed::saveNew($oembed_data, $file->getID());
+            File_oembed::saveNew($oembed_data, $file->id);
         }
         return true;
     }
 
     public function onEndShowAttachmentLink(HTMLOutputter $out, File $file)
     {
-        $oembed = File_oembed::getKV('file_id', $file->getID());
+        $oembed = File_oembed::getKV('file_id', $file->id);
         if (empty($oembed->author_name) && empty($oembed->provider)) {
             return true;
         }
@@ -219,7 +212,7 @@ class OembedPlugin extends Plugin
     {
         // Never treat generic HTML links as an enclosure type!
         // But if we have oEmbed info, we'll consider it golden.
-        $oembed = File_oembed::getKV('file_id', $file->getID());
+        $oembed = File_oembed::getKV('file_id', $file->id);
         if (!$oembed instanceof File_oembed || !in_array($oembed->type, array('photo', 'video'))) {
             return true;
         }
@@ -230,70 +223,6 @@ class OembedPlugin extends Plugin
             }
         }
         return true;
-    }
-
-    public function onStartShowAttachmentRepresentation(HTMLOutputter $out, File $file)
-    {
-        try {
-            $oembed = File_oembed::getByFile($file);
-        } catch (NoResultException $e) {
-            return true;
-        }
-
-        // Show thumbnail as usual if it's a photo.
-        if ($oembed->type === 'photo') {
-            return true;
-        }
-
-        $out->elementStart('article', ['class'=>'h-entry oembed']);
-        $out->elementStart('header');
-        try  {
-            $thumb = $file->getThumbnail(128, 128);
-            $out->element('img', $thumb->getHtmlAttrs(['class'=>'u-photo oembed']));
-            unset($thumb);
-        } catch (Exception $e) {
-            $out->element('div', ['class'=>'error'], $e->getMessage());
-        }
-        $out->elementStart('h5', ['class'=>'p-name oembed']);
-        $out->element('a', ['class'=>'u-url', 'href'=>$file->getUrl()], common_strip_html($oembed->title));
-        $out->elementEnd('h5');
-        $out->elementStart('div', ['class'=>'p-author oembed']);
-        if (!empty($oembed->author_name)) {
-            // TRANS: text before the author name of oEmbed attachment representation
-            // FIXME: The whole "By x from y" should be i18n because of different language constructions.
-            $out->text(_('By '));
-            $attrs = ['class'=>'h-card p-author'];
-            if (!empty($oembed->author_url)) {
-                $attrs['href'] = $oembed->author_url;
-                $tag = 'a';
-            } else {
-                $tag = 'span';
-            }
-            $out->element($tag, $attrs, $oembed->author_name);
-        }
-        if (!empty($oembed->provider)) {
-            // TRANS: text between the oEmbed author name and provider url
-            // FIXME: The whole "By x from y" should be i18n because of different language constructions.
-            $out->text(_(' from '));
-            $attrs = ['class'=>'h-card'];
-            if (!empty($oembed->provider_url)) {
-                $attrs['href'] = $oembed->provider_url;
-                $tag = 'a';
-            } else {
-                $tag = 'span';
-            }
-            $out->element($tag, $attrs, $oembed->provider);
-        }
-        $out->elementEnd('div');
-        $out->elementEnd('header');
-        $out->elementStart('div', ['class'=>'p-summary oembed']);
-        $out->raw(common_purify($oembed->html));
-        $out->elementEnd('div');
-        $out->elementStart('footer');
-        $out->elementEnd('footer');
-        $out->elementEnd('article');
-
-        return false;
     }
     
     public function onShowUnsupportedAttachmentRepresentation(HTMLOutputter $out, File $file)
@@ -379,36 +308,16 @@ class OembedPlugin extends Plugin
     protected function storeRemoteFileThumbnail(File_thumbnail $thumbnail)
     {
         if (!empty($thumbnail->filename) && file_exists($thumbnail->getPath())) {
-            throw new AlreadyFulfilledException(sprintf('A thumbnail seems to already exist for remote file with id==%u', $thumbnail->getFileId()));
+            throw new AlreadyFulfilledException(sprintf('A thumbnail seems to already exist for remote file with id==%u', $thumbnail->file_id));
         }
 
-        $remoteUrl = $thumbnail->getUrl();
-        $this->checkWhitelist($remoteUrl);
+        $url = $thumbnail->getUrl();
+        $this->checkWhitelist($url);
 
-        $http = new HTTPClient();
-        // First see if it's too large for us
-        common_debug(__METHOD__ . ': '.sprintf('Performing HEAD request for remote file id==%u to avoid unnecessarily downloading too large files. URL: %s', $thumbnail->getFileId(), $remoteUrl));
-        $head = $http->head($remoteUrl);
-        $remoteUrl = $head->getEffectiveUrl();   // to avoid going through redirects again
-
-        $headers = $head->getHeader();
-        $filesize = isset($headers['content-length']) ? $headers['content-length'] : null;
-
-        // FIXME: I just copied some checks from StoreRemoteMedia, maybe we should have other checks for thumbnails? Or at least embed into some class somewhere.
-        if (empty($filesize)) {
-            // file size not specified on remote server
-            common_debug(sprintf('%s: Ignoring remote thumbnail because we did not get a content length for thumbnail for file id==%u', __CLASS__, $thumbnail->getFileId()));
-            return true;
-        } elseif ($filesize > common_config('attachments', 'file_quota')) {
-            // file too big according to site configuration
-            common_debug(sprintf('%s: Skip downloading remote thumbnail because content length (%u) is larger than file_quota (%u) for file id==%u', __CLASS__, intval($filesize), common_config('attachments', 'file_quota'), $thumbnail->getFileId()));
-            return true;
-        }
-
-        // Then we download the file to memory and test whether it's actually an image file
+        // First we download the file to memory and test whether it's actually an image file
         // FIXME: To support remote video/whatever files, this needs reworking.
-        common_debug(sprintf('Downloading remote thumbnail for file id==%u (should be size %u) with effective URL: %s', $thumbnail->getFileId(), $filesize, _ve($remoteUrl)));
-        $imgData = HTTPClient::quickGet($remoteUrl);
+        common_debug(sprintf('Downloading remote thumbnail for file id==%u with thumbnail URL: %s', $thumbnail->file_id, $url));
+        $imgData = HTTPClient::quickGet($url);
         $info = @getimagesizefromstring($imgData);
         if ($info === false) {
             throw new UnsupportedMediaException(_('Remote file format was not identified as an image.'), $url);
@@ -416,10 +325,8 @@ class OembedPlugin extends Plugin
             throw new UnsupportedMediaException(_('Image file had impossible geometry (0 width or height)'));
         }
 
-        $ext = File::guessMimeExtension($info['mime']);
-
         // We'll trust sha256 (File::FILEHASH_ALG) not to have collision issues any time soon :)
-        $filename = 'oembed-'.hash(File::FILEHASH_ALG, $imgData) . ".{$ext}";
+        $filename = hash(File::FILEHASH_ALG, $imgData) . '.' . common_supported_mime_to_ext($info['mime']);
         $fullpath = File_thumbnail::path($filename);
         // Write the file to disk. Throw Exception on failure
         if (!file_exists($fullpath) && file_put_contents($fullpath, $imgData) === false) {

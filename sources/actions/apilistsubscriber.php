@@ -33,7 +33,7 @@ class ApiListSubscriberAction extends ApiBareAuthAction
 {
     var $list   = null;
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -52,9 +52,9 @@ class ApiListSubscriberAction extends ApiBareAuthAction
         return true;
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         $arr = array('profile_tag_id' => $this->list->id,
                       'profile_id' => $this->target->id);

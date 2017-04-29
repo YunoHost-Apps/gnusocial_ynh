@@ -49,9 +49,9 @@ class AccountManagementControlDocumentAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         header('Content-Type: application/json; charset=utf-8');
 

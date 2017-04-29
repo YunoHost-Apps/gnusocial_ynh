@@ -137,10 +137,7 @@ class TwitterImport
                                           'twitter',
                                           array('repeat_of' => $original->id,
                                                 'uri' => $statusUri,
-                                                'is_local' => Notice::GATEWAY,
-                                          		'object_type' => ActivityObject::NOTE,
-                                          		'verb' => ActivityVerb::POST
-                                          ));
+                                                'is_local' => Notice::GATEWAY));
                 common_log(LOG_INFO, "Saved {$repeat->id} as a repeat of {$original->id}");
                 Notice_to_status::saveNew($repeat->id, $statusId);
                 return $repeat;
@@ -149,19 +146,18 @@ class TwitterImport
 
         $notice = new Notice();
 
-        $notice->profile_id 	= $profile->id;
-        $notice->uri        	= $statusUri;
-        $notice->url        	= $statusUri;
-        $notice->verb       	= ActivityVerb::POST;
-        $notice->object_type 	= ActivityObject::NOTE;
-        $notice->created    	= strftime(
+        $notice->profile_id = $profile->id;
+        $notice->uri        = $statusUri;
+        $notice->url        = $statusUri;
+        $notice->verb       = ActivityVerb::POST;
+        $notice->created    = strftime(
             '%Y-%m-%d %H:%M:%S',
             strtotime($status->created_at)
         );
 
-        $notice->source     	= 'twitter';
+        $notice->source     = 'twitter';
 
-        $notice->reply_to   	= null;
+        $notice->reply_to   = null;
 
         $replyTo = twitter_id($status, 'in_reply_to_status_id');
         if (!empty($replyTo)) {

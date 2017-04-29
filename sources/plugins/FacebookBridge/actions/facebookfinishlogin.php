@@ -37,7 +37,7 @@ class FacebookfinishloginAction extends Action
     private $fbuser      = null; // Facebook user object (JSON)
     private $accessToken = null; // Access token provided by Facebook JS API
 
-    function prepare(array $args = array()) {
+    function prepare($args) {
         parent::prepare($args);
 
         // Check cookie for a valid access_token
@@ -79,9 +79,9 @@ class FacebookfinishloginAction extends Action
         return true;
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         if (common_is_real_login()) {
 

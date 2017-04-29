@@ -44,7 +44,7 @@ if (!defined('STATUSNET') && !defined('LACONICA')) {
  */
 class UnblockAction extends ProfileFormAction
 {
-    function prepare(array $args = array())
+    function prepare($args)
     {
         if (!parent::prepare($args)) {
             return false;

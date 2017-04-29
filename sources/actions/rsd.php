@@ -85,7 +85,7 @@ class RsdAction extends Action
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -126,7 +126,7 @@ class RsdAction extends Action
      *
      * @return nothing
      */
-    function handle()
+    function handle($args)
     {
         header('Content-Type: application/rsd+xml');
 

@@ -28,7 +28,11 @@
  * @link      http://status.net/
  */
 
-if (!defined('GNUSOCIAL')) { exit(1); }
+if (!defined('STATUSNET')) {
+    // This check helps protect against security problems;
+    // your code file can't be executed directly from the web.
+    exit(1);
+}
 
 /**
  * Stream of notices repeated by me
@@ -43,11 +47,14 @@ if (!defined('GNUSOCIAL')) { exit(1); }
 
 class RepeatedByMeNoticeStream extends ScopingNoticeStream
 {
-    function __construct(Profile $target, Profile $scoped=null)
+    function __construct($user, $profile = -1)
     {
-        parent::__construct(new CachingNoticeStream(new RawRepeatedByMeNoticeStream($target),
-                                                    'user:repeated_by_me:'.$target->getID()),
-                            $scoped);
+        if (is_int($profile) && $profile == -1) {
+            $profile = Profile::current();
+        }
+        parent::__construct(new CachingNoticeStream(new RawRepeatedByMeNoticeStream($user),
+                                                    'user:repeated_by_me:'.$user->id),
+                            $profile);
     }
 }
 
@@ -64,11 +71,11 @@ class RepeatedByMeNoticeStream extends ScopingNoticeStream
 
 class RawRepeatedByMeNoticeStream extends NoticeStream
 {
-    protected $target;
+    protected $user;
 
-    function __construct(Profile $target)
+    function __construct($user)
     {
-        $this->target = $target;
+        $this->user = $user;
     }
 
     function getNoticeIds($offset, $limit, $since_id, $max_id)
@@ -78,7 +85,7 @@ class RawRepeatedByMeNoticeStream extends NoticeStream
         $notice->selectAdd(); // clears it
         $notice->selectAdd('id');
 
-        $notice->profile_id = $this->target->getID();
+        $notice->profile_id = $this->user->id;
         $notice->whereAdd('repeat_of IS NOT NULL');
 
         $notice->orderBy('created DESC, id DESC');

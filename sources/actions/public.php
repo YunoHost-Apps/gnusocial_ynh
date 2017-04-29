@@ -86,6 +86,12 @@ class PublicAction extends SitestreamAction
             $ibs->show();
         }
 
+        $p = Profile::current();
+
+        if (!common_config('performance', 'high')) {
+            $cloud = new PublicTagCloudSection($this);
+            $cloud->show();
+        }
         $feat = new FeaturedUsersSection($this);
         $feat->show();
     }

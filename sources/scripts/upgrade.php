@@ -171,14 +171,9 @@ function initConversation()
     printfnq("Ensuring all conversations have a row in conversation table...");
 
     $notice = new Notice();
-    $notice->selectAdd();
-    $notice->selectAdd('DISTINCT conversation');
-    $notice->joinAdd(['conversation', 'conversation:id'], 'LEFT');  // LEFT to get the null values for conversation.id
-    $notice->whereAdd('conversation.id IS NULL');
-
-    if ($notice->find()) {
-        printfnq(" fixing {$notice->N} missing conversation entries...");
-    }
+    $notice->query('select distinct notice.conversation from notice '.
+                   'where notice.conversation is not null '.
+                   'and not exists (select conversation.id from conversation where id = notice.conversation)');
 
     while ($notice->fetch()) {
 
@@ -462,7 +457,7 @@ function deleteLocalFileThumbnailsWithoutFilename()
         while ($file->fetch()) {
             $thumbs = new File_thumbnail();
             $thumbs->file_id = $file->id;
-            $thumbs->whereAdd('filename IS NULL OR filename = ""');
+            $thumbs->whereAdd('filename IS NULL');
             // Checking if there were any File_thumbnail entries without filename
             if (!$thumbs->find()) {
                 continue;
@@ -485,7 +480,7 @@ function deleteMissingLocalFileThumbnails()
     printfnq("Removing all local File_thumbnail entries without existing files...");
 
     $thumbs = new File_thumbnail();
-    $thumbs->whereAdd('filename IS NOT NULL AND filename != ""');
+    $thumbs->whereAdd('filename IS NOT NULL');  // only fill in names where they're missing
     // Checking if there were any File_thumbnail entries without filename
     if ($thumbs->find()) {
         while ($thumbs->fetch()) {
@@ -508,7 +503,7 @@ function setFilehashOnLocalFiles()
     printfnq('Ensuring all local files have the filehash field set...');
 
     $file = new File();
-    $file->whereAdd('filename IS NOT NULL AND filename != ""');        // local files
+    $file->whereAdd('filename IS NOT NULL');        // local files
     $file->whereAdd('filehash IS NULL', 'AND');     // without filehash value
 
     if ($file->find()) {

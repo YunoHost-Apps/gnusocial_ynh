@@ -45,7 +45,7 @@ class FavoritedSliceAction extends FavoritedAction
      *
      * @todo move queries from showContent() to here
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 

@@ -53,9 +53,9 @@ class OpensearchAction extends Action
      *
      * @return boolean false if user doesn't exist
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         $type       = $this->trimmed('type');
         $short_name = '';
         if ($type == 'people') {

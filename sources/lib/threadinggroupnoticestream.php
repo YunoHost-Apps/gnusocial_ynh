@@ -4,8 +4,8 @@ if (!defined('GNUSOCIAL')) { exit(1); }
 
 class ThreadingGroupNoticeStream extends ThreadingNoticeStream
 {
-    function __construct($group, Profile $scoped=null)
+    function __construct($group, $profile)
     {
-        parent::__construct(new GroupNoticeStream($group, $scoped));
+        parent::__construct(new GroupNoticeStream($group, $profile));
     }
 }

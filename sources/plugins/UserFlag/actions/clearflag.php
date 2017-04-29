@@ -49,7 +49,7 @@ class ClearflagAction extends ProfileFormAction
      *
      * @return boolean success flag
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         if (!parent::prepare($args)) {
             return false;
@@ -73,7 +73,7 @@ class ClearflagAction extends ProfileFormAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $this->handlePost();

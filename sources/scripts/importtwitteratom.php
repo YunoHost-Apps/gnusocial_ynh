@@ -34,6 +34,7 @@ import an Atom feed from Twitter as notices by a user
 END_OF_IMPORTTWITTERATOM_HELP;
 
 require_once INSTALLDIR.'/scripts/commandline.inc';
+require_once INSTALLDIR.'/extlib/htmLawed/htmLawed.php';
 
 function getAtomFeedDocument()
 {
@@ -81,7 +82,12 @@ function importActivityStream($user, $doc)
         if (!have_option('q', 'quiet')) {
             print $activity->content . "\n";
         }
-        $html = common_purify(getTweetHtml($object->link));
+        $html = getTweetHtml($object->link);
+
+        $config = array('safe' => 1,
+                        'deny_attribute' => 'class,rel,id,style,on*');
+
+        $html = htmLawed($html, $config);
 
         $content = html_entity_decode(strip_tags($html), ENT_QUOTES, 'UTF-8');
 

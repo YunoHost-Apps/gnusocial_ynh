@@ -99,7 +99,7 @@ class Discovery
 
                 common_debug("LRDD discovery method for '$uri': {$class}");
                 $lrdd = new $class;
-                $links = $lrdd->discover($uri);
+                $links = call_user_func(array($lrdd, 'discover'), $uri);
                 $link = Discovery::getService($links, Discovery::LRDD_REL);
 
                 // Load the LRDD XRD
@@ -122,24 +122,9 @@ class Discovery
                     throw new Exception('Unexpected HTTP status code.');
                 }
 
-                switch ($response->getHeader('content-type')) {
-                case self::JRD_MIMETYPE_OLD:
-                case self::JRD_MIMETYPE:
-                    $type = 'json';
-                    break;
-                case self::XRD_MIMETYPE:
-                    $type = 'xml';
-                    break;
-                default:
-                    // fall back to letting XML_XRD auto-detect
-                    common_debug('No recognized content-type header for resource descriptor body.');
-                    $type = null;
-                }
-                $xrd->loadString($response->getBody(), $type);
+                $xrd->loadString($response->getBody());
                 return $xrd;
-
             } catch (Exception $e) {
-                common_log(LOG_INFO, sprintf('%s: Failed for %s: %s', _ve($class), _ve($uri), _ve($e->getMessage())));
                 continue;
             }
         }

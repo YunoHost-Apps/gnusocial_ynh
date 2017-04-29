@@ -301,7 +301,7 @@ class TwitterBridgePlugin extends Plugin
             'name' => 'TwitterBridge',
             'version' => self::VERSION,
             'author' => 'Zach Copley, Julien C, Jean Baptiste Favre',
-            'homepage' => 'https://git.gnu.io/gnu/gnu-social/tree/master/plugins/TwitterBridge',
+            'homepage' => 'http://status.net/wiki/Plugin:TwitterBridge',
             // TRANS: Plugin description.
             'rawdescription' => _m('The Twitter "bridge" plugin allows integration ' .
                 'of a StatusNet instance with ' .
@@ -569,29 +569,5 @@ class TwitterBridgePlugin extends Plugin
         }
 
         return true;
-    }
-    
-    /**
-     * Set the object_type field of previously imported Twitter notices to
-     * ActivityObject::NOTE if they are unset. Null object_type caused a notice
-     * not to show on the timeline.
-     */
-    public function onEndUpgrade()
-    {
-    	printfnq("Ensuring all Twitter notices have an object_type...");
-    	
-    	$notice = new Notice();
-    	$notice->whereAdd("source='twitter'");
-    	$notice->whereAdd('object_type IS NULL');
-    	
-    	if ($notice->find()) {
-    		while ($notice->fetch()) {
-    			$orig = Notice::getKV('id', $notice->id);
-    			$notice->object_type = ActivityObject::NOTE;
-    			$notice->update($orig);
-    		}
-    	}
-    	
-    	printfnq("DONE.\n");
     }
 }

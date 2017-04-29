@@ -55,22 +55,6 @@ class VideoThumbnailsPlugin extends Plugin
             return true;
         }
 
-        try {
-            // Exception thrown if no thumbnail found
-            $thumb = File_thumbnail::byFile($file, false);
-            $imgPath = $thumb->getPath();
-            // If getPath didn't throw an exception, we have a working locally stored thumbnail
-            return false;
-        } catch (NoResultException $e) {
-            // Alright, no thumbnail found, so let's create one.
-        } catch (InvalidFilenameException $e) {
-            // I guess this means $thumb->filename is null? Shouldn't happen because $file->filename is not null, so delete it
-            $thumb->delete();
-        } catch (FileNotFoundException $e) {
-            // Thumb file was not found, let's delete it.
-            $thumb->delete();
-        }
-
         // Let's save our frame to a temporary file. If we fail, remove it.
         $tmp_imgPath = tempnam(sys_get_temp_dir(), 'socialthumb-');
 
@@ -83,9 +67,7 @@ class VideoThumbnailsPlugin extends Plugin
             common_log(LOG_ERR, 'Neither ffmpeg nor avconv was found in your PATH. Cannot create video thumbnail.');
             return true;
         }
-        $fullcmd = $cmd.' -y -i '.escapeshellarg($file->getPath()).' -vcodec mjpeg -vframes 1 -f image2 -an '.escapeshellarg($tmp_imgPath);
-        common_debug(__METHOD__ . ' executing: '._ve($fullcmd));
-        $result = exec($fullcmd);
+        $result = exec($cmd.' -y -i '.escapeshellarg($file->getPath()).' -vcodec mjpeg -vframes 1 -f image2 -an '.escapeshellarg($tmp_imgPath));
 
         if (!getimagesize($tmp_imgPath)) {
             common_debug('exec of "avconv" produced a bad/nonexisting image it seems');

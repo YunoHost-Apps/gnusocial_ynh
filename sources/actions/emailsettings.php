@@ -369,7 +369,8 @@ class EmailsettingsAction extends SettingsAction
                 throw new ServerException(_('Could not insert confirmation code.'));
             }
 
-            $confirm->sendConfirmation();
+            common_debug('Sending confirmation address for user '.$user->getID().' to email '.$email);
+            mail_confirm_address($user, $confirm->code, $user->getNickname(), $email);
 
             Event::handle('EndAddEmailAddress', array($user, $email));
         }
@@ -400,7 +401,13 @@ class EmailsettingsAction extends SettingsAction
             throw new AlreadyFulfilledException(_('No pending confirmation to cancel.'));
         }
 
-        $confirm->delete();
+        $result = $confirm->delete();
+
+        if ($result === false) {
+            common_log_db_error($confirm, 'DELETE', __FILE__);
+            // TRANS: Server error thrown on database error canceling e-mail address confirmation.
+            throw new ServerException(_('Could not delete email confirmation.'));
+        }
 
         // TRANS: Message given after successfully canceling e-mail address confirmation.
         return _('Email confirmation cancelled.');

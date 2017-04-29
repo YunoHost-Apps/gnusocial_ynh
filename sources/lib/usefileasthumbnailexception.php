@@ -34,9 +34,13 @@ class UseFileAsThumbnailException extends UnsupportedMediaException
 {
     public $file = null;
 
-    public function __construct(File $file)
+    public function __construct($file_id)
     {
-        $this->file = $file;
+        $this->file = File::getKV('id', $file_id);
+        if (!$this->file instanceof File) {
+            throw new ServerException('No File ID supplied to exception');
+        }
+
         parent::__construct('Thumbnail not generated', $this->file->getPath());
     }
 }

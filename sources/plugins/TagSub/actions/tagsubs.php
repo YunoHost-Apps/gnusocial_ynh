@@ -136,7 +136,7 @@ class TagSubsAction extends GalleryAction
 
 class TagSubscriptionsList extends SubscriptionList
 {
-    function newListItem(Profile $tagsub)
+    function newListItem($tagsub)
     {
         return new TagSubscriptionsListItem($tagsub, $this->owner, $this->action);
     }

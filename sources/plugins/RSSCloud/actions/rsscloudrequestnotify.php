@@ -50,7 +50,7 @@ class RSSCloudRequestNotifyAction extends Action
      *
      * @return boolean false if user doesn't exist
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -82,9 +82,9 @@ class RSSCloudRequestNotifyAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         if ($_SERVER['REQUEST_METHOD'] != 'POST') {
             // TRANS: Form validation error displayed when POST is not used.

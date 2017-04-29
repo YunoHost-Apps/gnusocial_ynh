@@ -48,7 +48,7 @@ class FacebookdeauthorizeAction extends Action
      *
      * @return boolean true
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         $this->facebook = Facebookclient::getFacebook();
 
@@ -60,9 +60,9 @@ class FacebookdeauthorizeAction extends Action
      *
      * @param array $args is ignored since it's now passed in in prepare()
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         $data = $this->facebook->getSignedRequest();
 

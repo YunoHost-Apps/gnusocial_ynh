@@ -62,7 +62,7 @@ class SearchunsubAction extends SearchsubAction
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
         // Throws exception on error
 

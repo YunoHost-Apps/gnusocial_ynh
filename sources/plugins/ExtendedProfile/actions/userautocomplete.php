@@ -43,7 +43,7 @@ class UserautocompleteAction extends Action
      *
      * @return boolean true if nothing goes wrong
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
         $this->query = $this->trimmed('term');
@@ -57,9 +57,9 @@ class UserautocompleteAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         $this->showResults();
     }
 

@@ -46,7 +46,7 @@ class MailboxAction extends Action
 {
     var $page = null;
 
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
@@ -70,9 +70,9 @@ class MailboxAction extends Action
      *
      * @return void
      */
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
 
         if (!$this->user) {
             // TRANS: Client error displayed when trying to access a mailbox without providing a user.

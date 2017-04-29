@@ -38,9 +38,9 @@ class InviteAction extends Action
         return false;
     }
 
-    function handle()
+    function handle($args)
     {
-        parent::handle();
+        parent::handle($args);
         if (!common_config('invite', 'enabled')) {
             // TRANS: Client error displayed when trying to sent invites while they have been disabled.
             $this->clientError(_('Invites have been disabled.'));

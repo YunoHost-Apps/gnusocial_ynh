@@ -59,7 +59,7 @@ class BookmarkforurlAction extends Action
      *
      * @return boolean true
      */
-    function prepare(array $args = array())
+    function prepare($args)
     {
         parent::prepare($args);
 
