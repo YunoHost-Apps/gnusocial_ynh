@@ -1,6 +1,6 @@
 # gnusocial_ynh
 
-This app uses Qvitter plugin.
+This app uses [Qvitter](https://git.gnu.io/h2p/Qvitter) plugin.
 
 Before install this app you must have:
 
