@@ -1,5 +1,7 @@
 # gnusocial_ynh
 
+[![Integration level](https://dash.yunohost.org/integration/gnusocial.svg)](https://dash.yunohost.org/appci/app/gnusocial) ![](https://ci-apps.yunohost.org/ci/badges/gnusocial.status.svg) ![](https://ci-apps.yunohost.org/ci/badges/gnusocial.maintain.svg)
+
 This app brings [GNU social](https://gnu.io/social/) with [Qvitter](https://git.gnu.io/h2p/Qvitter) plugin.
 
 Before install this app you must have:
